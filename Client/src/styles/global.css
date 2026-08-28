@@ -30,6 +30,10 @@ h2 { margin-bottom: 22px; color: #0f172a; font-size: 1.2rem; }
 
 .header-actions { display: flex; align-items: center; gap: 20px; }
 .app-loading { padding: 40px; color: #64748b; text-align: center; }
+.connection-error { width: min(520px, calc(100% - 40px)); margin: 120px auto; padding: 28px; border: 1px solid #fecaca; border-radius: 14px; background: #fff; box-sizing: border-box; }
+.connection-error h1 { font-size: 1.7rem; }
+.connection-error p { color: #b91c1c; line-height: 1.6; }
+.connection-error-actions { display: flex; align-items: center; gap: 20px; margin-top: 24px; }
 
 @media (max-width: 760px) {
   .site-header { padding: 0 20px; }
