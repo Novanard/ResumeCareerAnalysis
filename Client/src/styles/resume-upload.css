@@ -1,0 +1,25 @@
+.upload-page {
+  width: min(680px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 72px 0 80px;
+}
+
+.upload-page h1 { margin-bottom: 14px; }
+.upload-introduction { margin-bottom: 36px; color: #64748b; line-height: 1.7; }
+.upload-card { padding: 28px; border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; box-shadow: 0 14px 32px rgba(15, 23, 42, .06); }
+.upload-card h2 { margin-bottom: 8px; }
+.upload-card > p { color: #64748b; }
+.file-label { display: inline-block; margin: 16px 0 10px; color: #334155; font-size: .9rem; font-weight: 700; }
+.upload-card input[type='file'] { display: block; width: 100%; color: #475569; }
+.upload-card input[type='file']::file-selector-button { margin-right: 12px; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 7px; color: #1e293b; background: #f8fafc; cursor: pointer; font: inherit; }
+.file-status { min-height: 24px; margin: 22px 0 16px; font-size: .9rem; }
+.file-status-error { color: #b91c1c !important; }
+.file-status-valid { color: #15803d !important; }
+.file-status-pending { color: #1d4ed8 !important; }
+.primary-button { padding: 11px 16px; border: 0; border-radius: 8px; color: #fff; background: #2563eb; font-weight: 700; cursor: pointer; }
+.primary-button:disabled { cursor: not-allowed; opacity: .5; }
+
+@media (max-width: 600px) {
+  .upload-page { padding-top: 44px; }
+  .upload-card { padding: 22px; }
+}
