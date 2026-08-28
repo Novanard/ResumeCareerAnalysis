@@ -108,35 +108,15 @@ A candidate may contain only some of these sections or may contain additional se
 
 Resume-specific information should be represented flexibly.
 
-The parsing result should support dynamic sections rather than requiring every candidate to have the same predefined fields.
+The exact version 1 output is defined and frozen in
+[`02-CandidateProfileContract.md`](./02-CandidateProfileContract.md).
 
-Example conceptual structure:
+Common information uses named collections such as experience, education,
+skills, and projects. Candidate-specific information that does not fit those
+collections uses the contract's minimal `additionalSections` collection.
 
-```json
-{
-  "sections": [
-    {
-      "type": "experience",
-      "title": "Work Experience",
-      "items": []
-    },
-    {
-      "type": "military_service",
-      "title": "Military Service",
-      "items": []
-    },
-    {
-      "type": "projects",
-      "title": "Projects",
-      "items": []
-    }
-  ]
-}
-```
-
-Different candidates may produce different sets of sections.
-
-The exact JSON structure may change during implementation.
+Different candidates may populate different collections, but every collection
+key is returned and missing collections use an empty array.
 
 ---
 
@@ -165,7 +145,8 @@ Stable profile information may be stored in relational database fields.
 
 Flexible resume-specific information should be stored using PostgreSQL JSONB.
 
-The exact schema will be finalized when the profile specification is implemented.
+The exact JSONB mapping is defined in
+[`02-CandidateProfileContract.md`](./02-CandidateProfileContract.md).
 
 ---
 
