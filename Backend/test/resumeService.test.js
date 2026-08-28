@@ -161,10 +161,16 @@ test("saveExtractedText updates the stored resume record", async () => {
   });
 
   assert.deepEqual(calls.updates, [
-    { extracted_text: "Maya Cohen\nSoftware Engineer" },
+    {
+      extracted_text: "Maya Cohen\nSoftware Engineer",
+      processing_status: "text_extracted",
+      processing_error: null,
+    },
   ]);
   assert.deepEqual(resume, {
     id: "resume-123",
     extracted_text: "Maya Cohen\nSoftware Engineer",
+    processing_status: "text_extracted",
+    processing_error: null,
   });
 });

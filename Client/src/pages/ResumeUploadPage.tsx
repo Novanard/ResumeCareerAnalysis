@@ -67,7 +67,9 @@ function ResumeUploadPage({
       const resume = await uploadResume(selectedFile, accessToken)
       setStatus({
         type: 'success',
-        message: `Resume uploaded and text extracted. Resume ID: ${resume.id}`,
+        message: resume.processing_status === 'parsed'
+          ? 'Resume uploaded and candidate profile generated.'
+          : `Resume uploaded and text extracted. AI parsing is ready to be connected. Resume ID: ${resume.id}`,
       })
     } catch (error) {
       setStatus({

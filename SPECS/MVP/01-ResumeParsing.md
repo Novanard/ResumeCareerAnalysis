@@ -82,6 +82,15 @@ The extracted resume text will be analyzed by an AI model.
 
 The AI should identify relevant candidate information and return structured data.
 
+The backend exposes the provider-independent parsing boundary through a model
+client implementing `generateCandidateProfile({ instructions, input, schema })`.
+Until a real provider is configured, uploads finish with `text_extracted` status
+and can later be retried using `POST /api/resumes/:resumeId/parse`.
+
+Processing states are: `uploaded`, `text_extracted`, `parsing`, `parsed`, and
+`parsing_failed`. Invalid AI output is rejected before candidate profile data is
+updated, so a failed retry cannot overwrite the last valid profile.
+
 The parser must not assume that every resume contains the same sections.
 
 Possible sections may include:

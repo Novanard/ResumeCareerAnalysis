@@ -16,6 +16,9 @@ export interface UploadedResume {
   file_size: number
   extracted_text: string | null
   created_at: string
+  processing_status: 'uploaded' | 'text_extracted' | 'parsing' | 'parsed' | 'parsing_failed'
+  processing_error: string | null
+  parsed_at: string | null
 }
 
 interface UploadResumeResponse {
@@ -75,5 +78,22 @@ export async function uploadResume(
     throw new Error(message)
   }
 
+  return (body as UploadResumeResponse).resume
+}
+
+export async function retryResumeParsing(
+  resumeId: string,
+  accessToken: string,
+): Promise<UploadedResume> {
+  if (!apiUrl) throw new Error('The frontend API URL is not configured.')
+
+  const response = await fetch(`${apiUrl}/api/resumes/${resumeId}/parse`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  const body = (await response.json()) as UploadResumeResponse | { error?: string }
+  if (!response.ok) {
+    throw new Error('error' in body && body.error ? body.error : 'Unable to parse resume.')
+  }
   return (body as UploadResumeResponse).resume
 }

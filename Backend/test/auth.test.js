@@ -75,12 +75,12 @@ test("GET /api/auth/me returns the authenticated user", async () => {
   assert.deepEqual(response.body, { user, profile });
 });
 
-test("GET /api/test-db is protected", async () => {
+test("obsolete database diagnostic route is not exposed", async () => {
   const supabase = createSupabaseMock(async () => {
     throw new Error("getUser should not be called");
   });
 
   await request(createApp({ supabaseClient: supabase }))
     .get("/api/test-db")
-    .expect(401);
+    .expect(404);
 });

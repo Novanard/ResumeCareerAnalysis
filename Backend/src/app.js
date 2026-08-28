@@ -14,18 +14,28 @@ const {
   createResumeTextExtractor,
   ResumeTextExtractionError,
 } = require("./services/resumeTextExtractor");
+const { createCandidateProfileParser, CandidateProfileParsingError } = require("./services/candidateProfileParser");
+const { createResumeParsingService } = require("./services/resumeParsingService");
 
 function createApp({
   supabaseClient,
   resumeService,
   candidateProfileService,
   resumeTextExtractor,
+  modelClient,
+  resumeParsingService,
 } = {}) {
   const supabase = supabaseClient || require("./supabase");
   const resumes = resumeService || createResumeService(supabase);
   const candidateProfiles =
     candidateProfileService || createCandidateProfileService(supabase);
   const textExtractor = resumeTextExtractor || createResumeTextExtractor();
+  const parser = createCandidateProfileParser(modelClient);
+  const resumeParser = resumeParsingService || createResumeParsingService({
+    resumeService: resumes,
+    candidateProfileService: candidateProfiles,
+    parser,
+  });
   const authenticateUser = createAuthenticateUser(supabase);
   const app = express();
 
@@ -67,6 +77,14 @@ function createApp({
             extractedText,
           });
 
+          if (resumeParser.isConfigured()) {
+            const result = await resumeParser.parseResume({
+              resumeId: processedResume.id,
+              userId: req.user.id,
+            });
+            return res.status(201).json(result);
+          }
+
           return res.status(201).json({ resume: processedResume });
         } catch (error) {
           if (error instanceof ResumeTextExtractionError) {
@@ -91,16 +109,26 @@ function createApp({
     },
   );
 
-  app.get("/api/test-db", authenticateUser, async (_req, res) => {
-    const { data, error } = await supabase
-      .from("candidate_profiles")
-      .select("*");
-
-    if (error) {
-      return res.status(500).json({ error: error.message });
+  app.post("/api/resumes/:resumeId/parse", authenticateUser, async (req, res) => {
+    try {
+      const result = await resumeParser.parseResume({
+        resumeId: req.params.resumeId,
+        userId: req.user.id,
+      });
+      return res.json(result);
+    } catch (error) {
+      if (
+        error instanceof CandidateProfileParsingError ||
+        error instanceof ResumeServiceError ||
+        error instanceof CandidateProfileServiceError
+      ) {
+        return res.status(error.statusCode).json({
+          error: error.message,
+          code: error.code,
+        });
+      }
+      return res.status(500).json({ error: "Unable to parse resume" });
     }
-
-    return res.json(data);
   });
 
   return app;
