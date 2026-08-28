@@ -1,32 +1,14 @@
 require("dotenv").config();
 
-const express = require("express");
-const cors = require("cors");
-const supabase = require("./supabase");
+const { createApp } = require("./app");
 
-const app = express();
+const app = createApp();
+const port = process.env.PORT || 3001;
 
-app.use(cors());
-app.use(express.json());
+if (require.main === module) {
+  app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+  });
+}
 
-app.get("/api/health", (req, res) => {
-  res.json({ status: "ok" });
-});
-
-app.get("/api/test-db", async (req, res) => {
-  const { data, error } = await supabase
-    .from("candidate_profiles")
-    .select("*");
-
-  if (error) {
-    return res.status(500).json({ error: error.message });
-  }
-
-  res.json(data);
-});
-
-const PORT = process.env.PORT || 3001;
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+module.exports = app;
