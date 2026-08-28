@@ -6,10 +6,20 @@ const {
   createResumeService,
   ResumeServiceError,
 } = require("./services/resumeService");
+const {
+  createCandidateProfileService,
+  CandidateProfileServiceError,
+} = require("./services/candidateProfileService");
 
-function createApp({ supabaseClient, resumeService } = {}) {
+function createApp({
+  supabaseClient,
+  resumeService,
+  candidateProfileService,
+} = {}) {
   const supabase = supabaseClient || require("./supabase");
   const resumes = resumeService || createResumeService(supabase);
+  const candidateProfiles =
+    candidateProfileService || createCandidateProfileService(supabase);
   const authenticateUser = createAuthenticateUser(supabase);
   const app = express();
 
@@ -20,8 +30,17 @@ function createApp({ supabaseClient, resumeService } = {}) {
     res.json({ status: "ok" });
   });
 
-  app.get("/api/auth/me", authenticateUser, (req, res) => {
-    res.json({ user: req.user });
+  app.get("/api/auth/me", authenticateUser, async (req, res) => {
+    try {
+      const profile = await candidateProfiles.ensureProfile(req.user);
+      return res.json({ user: req.user, profile });
+    } catch (error) {
+      if (error instanceof CandidateProfileServiceError) {
+        return res.status(error.statusCode).json({ error: error.message });
+      }
+
+      return res.status(500).json({ error: "Unable to prepare candidate profile" });
+    }
   });
 
   app.post(

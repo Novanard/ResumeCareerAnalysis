@@ -51,17 +51,28 @@ test("GET /api/auth/me rejects an invalid access token", async () => {
 
 test("GET /api/auth/me returns the authenticated user", async () => {
   const user = { id: "user-123", email: "candidate@example.com" };
+  const profile = { id: "profile-123", user_id: user.id };
   const supabase = createSupabaseMock(async (token) => {
     assert.equal(token, "valid-token");
     return { data: { user }, error: null };
   });
 
-  const response = await request(createApp({ supabaseClient: supabase }))
+  const candidateProfileService = {
+    async ensureProfile(receivedUser) {
+      assert.equal(receivedUser, user);
+      return profile;
+    },
+  };
+
+  const response = await request(createApp({
+    supabaseClient: supabase,
+    candidateProfileService,
+  }))
     .get("/api/auth/me")
     .set("Authorization", "Bearer valid-token")
     .expect(200);
 
-  assert.deepEqual(response.body, { user });
+  assert.deepEqual(response.body, { user, profile });
 });
 
 test("GET /api/test-db is protected", async () => {
