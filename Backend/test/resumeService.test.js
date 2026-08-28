@@ -4,7 +4,7 @@ const assert = require("node:assert/strict");
 const { createResumeService } = require("../src/services/resumeService");
 
 function createSupabaseMock({ profile, profileError, uploadError, insertError } = {}) {
-  const calls = { uploads: [], inserts: [], removals: [] };
+  const calls = { uploads: [], inserts: [], removals: [], updates: [] };
 
   const client = {
     from(table) {
@@ -38,6 +38,27 @@ function createSupabaseMock({ profile, profileError, uploadError, insertError } 
                     return {
                       data: insertError ? null : { id: "resume-123", ...payload },
                       error: insertError || null,
+                    };
+                  },
+                };
+              },
+            };
+          },
+          update(payload) {
+            calls.updates.push(payload);
+            return {
+              eq(_column, resumeId) {
+                return {
+                  select() {
+                    return {
+                      async single() {
+                        return {
+                          data: insertError
+                            ? null
+                            : { id: resumeId, ...payload },
+                          error: insertError || null,
+                        };
+                      },
                     };
                   },
                 };
@@ -128,4 +149,22 @@ test("saveResume removes the stored file when record creation fails", async () =
 
   await assert.rejects(service.saveResume({ file, userId: "user-123" }));
   assert.deepEqual(calls.removals, [[calls.uploads[0].storagePath]]);
+});
+
+test("saveExtractedText updates the stored resume record", async () => {
+  const { client, calls } = createSupabaseMock();
+  const service = createResumeService(client);
+
+  const resume = await service.saveExtractedText({
+    resumeId: "resume-123",
+    extractedText: "Maya Cohen\nSoftware Engineer",
+  });
+
+  assert.deepEqual(calls.updates, [
+    { extracted_text: "Maya Cohen\nSoftware Engineer" },
+  ]);
+  assert.deepEqual(resume, {
+    id: "resume-123",
+    extracted_text: "Maya Cohen\nSoftware Engineer",
+  });
 });

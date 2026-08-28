@@ -10,16 +10,22 @@ const {
   createCandidateProfileService,
   CandidateProfileServiceError,
 } = require("./services/candidateProfileService");
+const {
+  createResumeTextExtractor,
+  ResumeTextExtractionError,
+} = require("./services/resumeTextExtractor");
 
 function createApp({
   supabaseClient,
   resumeService,
   candidateProfileService,
+  resumeTextExtractor,
 } = {}) {
   const supabase = supabaseClient || require("./supabase");
   const resumes = resumeService || createResumeService(supabase);
   const candidateProfiles =
     candidateProfileService || createCandidateProfileService(supabase);
+  const textExtractor = resumeTextExtractor || createResumeTextExtractor();
   const authenticateUser = createAuthenticateUser(supabase);
   const app = express();
 
@@ -49,12 +55,32 @@ function createApp({
     handleResumeUpload,
     async (req, res) => {
       try {
-        const resume = await resumes.saveResume({
+        const storedResume = await resumes.saveResume({
           file: req.file,
           userId: req.user.id,
         });
 
-        return res.status(201).json({ resume });
+        try {
+          const extractedText = await textExtractor.extractText(req.file);
+          const processedResume = await resumes.saveExtractedText({
+            resumeId: storedResume.id,
+            extractedText,
+          });
+
+          return res.status(201).json({ resume: processedResume });
+        } catch (error) {
+          if (error instanceof ResumeTextExtractionError) {
+            return res.status(error.statusCode).json({
+              error: error.message,
+              resume: {
+                id: storedResume.id,
+                status: "extraction_failed",
+              },
+            });
+          }
+
+          throw error;
+        }
       } catch (error) {
         if (error instanceof ResumeServiceError) {
           return res.status(error.statusCode).json({ error: error.message });

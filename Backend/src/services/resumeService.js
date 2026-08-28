@@ -63,6 +63,24 @@ function createResumeService(supabaseClient) {
 
       return resume;
     },
+
+    async saveExtractedText({ resumeId, extractedText }) {
+      const { data: resume, error } = await supabaseClient
+        .from("resumes")
+        .update({ extracted_text: extractedText })
+        .eq("id", resumeId)
+        .select()
+        .single();
+
+      if (error) {
+        throw new ResumeServiceError(
+          "Unable to save extracted resume text",
+          500,
+        );
+      }
+
+      return resume;
+    },
   };
 }
 

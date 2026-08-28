@@ -67,7 +67,7 @@ function ResumeUploadPage({
       const resume = await uploadResume(selectedFile, accessToken)
       setStatus({
         type: 'success',
-        message: `Resume uploaded successfully. Resume ID: ${resume.id}`,
+        message: `Resume uploaded and text extracted. Resume ID: ${resume.id}`,
       })
     } catch (error) {
       setStatus({
