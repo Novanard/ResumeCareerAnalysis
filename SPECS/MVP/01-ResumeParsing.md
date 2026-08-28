@@ -26,7 +26,17 @@ The system should initially support:
 
 The uploaded file represents one candidate resume.
 
-The exact maximum file size may be decided during implementation.
+The initial maximum file size is 5 MB.
+
+The frontend sends the file to the authenticated backend endpoint using:
+
+* `POST /api/resumes`
+* `multipart/form-data`
+* form field name `resume`
+* `Authorization: Bearer <access-token>`
+
+The backend must validate the file type and size even when the frontend has
+already performed validation.
 
 ---
 
@@ -138,9 +148,16 @@ The system should store:
 
 * resume ID
 * candidate profile ID
-* file reference
+* private Storage path
+* original filename
+* MIME type
+* file size
 * extracted text
 * upload timestamp
+
+The initial implementation uses a private Supabase Storage bucket named
+`resumes`. Files are stored and retrieved through the authenticated backend;
+the browser does not receive direct write access to the bucket.
 
 ### Candidate Profile
 
