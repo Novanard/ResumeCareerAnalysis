@@ -3,6 +3,7 @@ import '../styles/resume-upload.css'
 
 interface ResumeUploadPageProps {
   onViewProfile: () => void
+  onSignOut: () => void
 }
 
 type FileStatus =
@@ -13,7 +14,7 @@ type FileStatus =
 
 const acceptedExtensions = ['pdf', 'docx']
 
-function ResumeUploadPage({ onViewProfile }: ResumeUploadPageProps) {
+function ResumeUploadPage({ onViewProfile, onSignOut }: ResumeUploadPageProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [status, setStatus] = useState<FileStatus>({
     type: 'idle',
@@ -55,9 +56,14 @@ function ResumeUploadPage({ onViewProfile }: ResumeUploadPageProps) {
     <div className="app-shell">
       <header className="site-header">
         <span className="brand">Career Profile</span>
-        <button className="header-link" type="button" onClick={onViewProfile}>
-          View profile preview
-        </button>
+        <div className="header-actions">
+          <button className="header-link" type="button" onClick={onViewProfile}>
+            View profile preview
+          </button>
+          <button className="header-link" type="button" onClick={onSignOut}>
+            Sign out
+          </button>
+        </div>
       </header>
 
       <main className="upload-page">

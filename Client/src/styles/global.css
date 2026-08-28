@@ -28,6 +28,9 @@ h2 { margin-bottom: 22px; color: #0f172a; font-size: 1.2rem; }
   font-weight: 650;
 }
 
+.header-actions { display: flex; align-items: center; gap: 20px; }
+.app-loading { padding: 40px; color: #64748b; text-align: center; }
+
 @media (max-width: 760px) {
   .site-header { padding: 0 20px; }
 }

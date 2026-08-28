@@ -1,0 +1,19 @@
+.login-page { display: grid; width: min(460px, calc(100% - 40px)); min-height: calc(100vh - 69px); margin: 0 auto; padding: 48px 0; place-items: center; box-sizing: border-box; }
+.login-card { width: 100%; padding: 32px; border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; box-shadow: 0 14px 32px rgba(15, 23, 42, .06); box-sizing: border-box; }
+.login-card h1 { font-size: 2rem; }
+.login-introduction { margin-bottom: 28px; color: #64748b; }
+.social-actions { display: grid; gap: 10px; }
+.social-actions button { padding: 11px 14px; border: 1px solid #cbd5e1; border-radius: 8px; color: #1e293b; background: #fff; cursor: pointer; font-weight: 650; }
+.social-actions button:disabled, .login-card button:disabled { cursor: not-allowed; opacity: .5; }
+.login-divider { display: flex; align-items: center; gap: 12px; margin: 24px 0; color: #94a3b8; font-size: .8rem; }
+.login-divider::before, .login-divider::after { height: 1px; background: #e2e8f0; content: ''; flex: 1; }
+.login-card label { display: block; margin-bottom: 7px; color: #334155; font-size: .85rem; font-weight: 650; }
+.login-card input { width: 100%; padding: 11px 12px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; }
+.login-card form .primary-button { width: 100%; margin-top: 12px; }
+.auth-message { margin: 18px 0 0; font-size: .88rem; line-height: 1.5; }
+.auth-message-error { color: #b91c1c; }
+.auth-message-sent { color: #15803d; }
+
+@media (max-width: 520px) {
+  .login-card { padding: 24px; }
+}

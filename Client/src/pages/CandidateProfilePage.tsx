@@ -4,9 +4,10 @@ import '../styles/candidate-profile.css'
 
 interface CandidateProfilePageProps {
   onBackToUpload: () => void
+  onSignOut: () => void
 }
 
-function CandidateProfilePage({ onBackToUpload }: CandidateProfilePageProps) {
+function CandidateProfilePage({ onBackToUpload, onSignOut }: CandidateProfilePageProps) {
   const initials = mockCandidate.fullName
     .split(' ')
     .map((name) => name[0])
@@ -16,9 +17,14 @@ function CandidateProfilePage({ onBackToUpload }: CandidateProfilePageProps) {
     <div className="app-shell">
       <header className="site-header">
         <span className="brand">Career Profile</span>
-        <button className="header-link" type="button" onClick={onBackToUpload}>
-          Upload resume
-        </button>
+        <div className="header-actions">
+          <button className="header-link" type="button" onClick={onBackToUpload}>
+            Upload resume
+          </button>
+          <button className="header-link" type="button" onClick={onSignOut}>
+            Sign out
+          </button>
+        </div>
       </header>
 
       <main className="profile-page">
