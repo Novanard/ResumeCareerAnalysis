@@ -16,6 +16,7 @@ const {
 } = require("./services/resumeTextExtractor");
 const { createCandidateProfileParser, CandidateProfileParsingError } = require("./services/candidateProfileParser");
 const { createResumeParsingService } = require("./services/resumeParsingService");
+const { createDeepSeekClientFromEnv } = require("./ai/deepSeekClient");
 
 function createApp({
   supabaseClient,
@@ -30,7 +31,9 @@ function createApp({
   const candidateProfiles =
     candidateProfileService || createCandidateProfileService(supabase);
   const textExtractor = resumeTextExtractor || createResumeTextExtractor();
-  const parser = createCandidateProfileParser(modelClient);
+  const parser = createCandidateProfileParser(
+    modelClient || createDeepSeekClientFromEnv(),
+  );
   const resumeParser = resumeParsingService || createResumeParsingService({
     resumeService: resumes,
     candidateProfileService: candidateProfiles,
