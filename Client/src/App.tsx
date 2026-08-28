@@ -105,6 +105,7 @@ function App() {
 
   return page === 'upload' ? (
     <ResumeUploadPage
+      accessToken={session.access_token}
       onViewProfile={() => setPage('profile')}
       onSignOut={signOut}
     />

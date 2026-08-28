@@ -1,7 +1,9 @@
 import { useState, type ChangeEvent } from 'react'
+import { uploadResume } from '../services/api'
 import '../styles/resume-upload.css'
 
 interface ResumeUploadPageProps {
+  accessToken: string
   onViewProfile: () => void
   onSignOut: () => void
 }
@@ -10,11 +12,17 @@ type FileStatus =
   | { type: 'idle'; message: string }
   | { type: 'valid'; message: string }
   | { type: 'error'; message: string }
-  | { type: 'pending'; message: string }
+  | { type: 'uploading'; message: string }
+  | { type: 'success'; message: string }
 
 const acceptedExtensions = ['pdf', 'docx']
+const maximumFileSize = 5 * 1024 * 1024
 
-function ResumeUploadPage({ onViewProfile, onSignOut }: ResumeUploadPageProps) {
+function ResumeUploadPage({
+  accessToken,
+  onViewProfile,
+  onSignOut,
+}: ResumeUploadPageProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [status, setStatus] = useState<FileStatus>({
     type: 'idle',
@@ -39,17 +47,34 @@ function ResumeUploadPage({ onViewProfile, onSignOut }: ResumeUploadPageProps) {
       return
     }
 
+    if (file.size > maximumFileSize) {
+      setSelectedFile(null)
+      setStatus({ type: 'error', message: 'Resume file must be 5 MB or smaller.' })
+      event.target.value = ''
+      return
+    }
+
     setSelectedFile(file)
     setStatus({ type: 'valid', message: `${file.name} is ready.` })
   }
 
-  function handleUpload() {
+  async function handleUpload() {
     if (!selectedFile) return
 
-    setStatus({
-      type: 'pending',
-      message: 'File validated. Backend upload will be connected in the next step.',
-    })
+    setStatus({ type: 'uploading', message: 'Uploading resume...' })
+
+    try {
+      const resume = await uploadResume(selectedFile, accessToken)
+      setStatus({
+        type: 'success',
+        message: `Resume uploaded successfully. Resume ID: ${resume.id}`,
+      })
+    } catch (error) {
+      setStatus({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Unable to upload resume.',
+      })
+    }
   }
 
   return (
@@ -75,13 +100,14 @@ function ResumeUploadPage({ onViewProfile, onSignOut }: ResumeUploadPageProps) {
 
         <section className="upload-card" aria-labelledby="resume-file-title">
           <h2 id="resume-file-title">Resume file</h2>
-          <p>Supported formats: PDF and DOCX.</p>
+          <p>Supported formats: PDF and DOCX, up to 5 MB.</p>
 
           <label className="file-label" htmlFor="resume-file">Choose a file</label>
           <input
             id="resume-file"
             type="file"
             accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            disabled={status.type === 'uploading'}
             onChange={handleFileChange}
           />
 
@@ -92,10 +118,14 @@ function ResumeUploadPage({ onViewProfile, onSignOut }: ResumeUploadPageProps) {
           <button
             className="primary-button"
             type="button"
-            disabled={!selectedFile}
+            disabled={
+              !selectedFile ||
+              status.type === 'uploading' ||
+              status.type === 'success'
+            }
             onClick={handleUpload}
           >
-            Upload resume
+            {status.type === 'uploading' ? 'Uploading...' : 'Upload resume'}
           </button>
         </section>
       </main>

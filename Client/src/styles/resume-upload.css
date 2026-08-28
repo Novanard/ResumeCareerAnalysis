@@ -15,7 +15,8 @@
 .file-status { min-height: 24px; margin: 22px 0 16px; font-size: .9rem; }
 .file-status-error { color: #b91c1c !important; }
 .file-status-valid { color: #15803d !important; }
-.file-status-pending { color: #1d4ed8 !important; }
+.file-status-uploading { color: #1d4ed8 !important; }
+.file-status-success { color: #15803d !important; }
 .primary-button { padding: 11px 16px; border: 0; border-radius: 8px; color: #fff; background: #2563eb; font-weight: 700; cursor: pointer; }
 .primary-button:disabled { cursor: not-allowed; opacity: .5; }
 
