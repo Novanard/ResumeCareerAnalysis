@@ -111,6 +111,7 @@ function App() {
     />
   ) : (
     <CandidateProfilePage
+      accessToken={session.access_token}
       onBackToUpload={() => setPage('upload')}
       onSignOut={signOut}
     />

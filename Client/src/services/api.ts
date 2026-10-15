@@ -1,3 +1,5 @@
+import type { CandidateProfile } from '../types/candidate'
+
 export interface AuthenticatedUser {
   id: string
   email?: string
@@ -26,6 +28,25 @@ interface UploadResumeResponse {
 }
 
 const apiUrl = import.meta.env.VITE_API_URL?.replace(/\/$/, '')
+
+export async function getCandidateProfile(
+  accessToken: string,
+  signal?: AbortSignal,
+): Promise<CandidateProfile> {
+  if (!apiUrl) throw new Error('The frontend API URL is not configured.')
+
+  const response = await fetch(`${apiUrl}/api/profile`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    signal,
+  })
+  const body = (await response.json()) as { profile?: CandidateProfile; error?: string }
+
+  if (!response.ok || !body.profile) {
+    throw new Error(body.error || 'Unable to load candidate profile.')
+  }
+
+  return body.profile
+}
 
 export async function verifyBackendSession(
   accessToken: string,

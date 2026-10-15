@@ -25,6 +25,7 @@ h3 { margin-bottom: 5px; color: #1e293b; font-size: 1rem; }
 .question-card button { width: 100%; margin-top: 12px; padding: 11px 14px; border: 0; border-radius: 8px; color: #fff; background: #2563eb; font: inherit; font-weight: 700; }
 .question-card button:disabled { cursor: not-allowed; opacity: .55; }
 .question-card small { display: block; margin-top: 9px; color: #94a3b8; text-align: center; }
+.parsed-profile-json { overflow: auto; max-height: 520px; margin-top: 16px; padding: 16px; border-radius: 8px; background: #0f172a; color: #e2e8f0; font-size: .78rem; line-height: 1.5; white-space: pre-wrap; }
 
 @media (max-width: 760px) {
   .profile-page { padding-top: 38px; }

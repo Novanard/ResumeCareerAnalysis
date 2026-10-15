@@ -75,6 +75,44 @@ test("GET /api/auth/me returns the authenticated user", async () => {
   assert.deepEqual(response.body, { user, profile });
 });
 
+test("GET /api/profile returns the authenticated user's parsed profile", async () => {
+  const user = { id: "user-123", email: "candidate@example.com" };
+  const storedProfile = {
+    id: "profile-123",
+    user_id: user.id,
+    full_name: "Candidate Name",
+    headline: "Developer",
+    summary: null,
+    profile_data: {
+      schemaVersion: 1,
+      contact: {},
+      skills: [],
+      experience: [],
+      education: [],
+      projects: [],
+      languages: [],
+      certifications: [],
+      additionalSections: [],
+      rawMetadata: { source: "cv", warnings: [] },
+    },
+  };
+  const supabase = createSupabaseMock(async () => ({ data: { user }, error: null }));
+  const candidateProfileService = {
+    async ensureProfile() {
+      return storedProfile;
+    },
+  };
+
+  const response = await request(createApp({ supabaseClient: supabase, candidateProfileService }))
+    .get("/api/profile")
+    .set("Authorization", "Bearer valid-token")
+    .expect(200);
+
+  assert.equal(response.body.profile.fullName, "Candidate Name");
+  assert.equal(response.body.profile.headline, "Developer");
+  assert.equal(response.body.profile.schemaVersion, 1);
+});
+
 test("obsolete database diagnostic route is not exposed", async () => {
   const supabase = createSupabaseMock(async () => {
     throw new Error("getUser should not be called");

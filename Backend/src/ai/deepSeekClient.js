@@ -1,5 +1,5 @@
 const DEFAULT_BASE_URL = "https://api.deepseek.com";
-const DEFAULT_MODEL = "deepseek-v4-pro";
+const DEFAULT_MODEL = "deepseek-flash";
 
 class DeepSeekClientError extends Error {
   constructor(message) {

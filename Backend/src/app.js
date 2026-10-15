@@ -17,6 +17,7 @@ const {
 const { createCandidateProfileParser, CandidateProfileParsingError } = require("./services/candidateProfileParser");
 const { createResumeParsingService } = require("./services/resumeParsingService");
 const { createDeepSeekClientFromEnv } = require("./ai/deepSeekClient");
+const { fromCandidateProfileRow } = require("./mappers/candidateProfileMapper");
 
 function createApp({
   supabaseClient,
@@ -59,6 +60,24 @@ function createApp({
       }
 
       return res.status(500).json({ error: "Unable to prepare candidate profile" });
+    }
+  });
+
+  app.get("/api/profile", authenticateUser, async (req, res) => {
+    try {
+      const profile = await candidateProfiles.ensureProfile(req.user);
+
+      if (profile.profile_data?.schemaVersion !== 1) {
+        return res.status(404).json({ error: "A parsed candidate profile is not available yet" });
+      }
+
+      return res.json({ profile: fromCandidateProfileRow(profile) });
+    } catch (error) {
+      if (error instanceof CandidateProfileServiceError) {
+        return res.status(error.statusCode).json({ error: error.message });
+      }
+
+      return res.status(500).json({ error: "Unable to load candidate profile" });
     }
   });
 

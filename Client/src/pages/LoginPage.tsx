@@ -9,17 +9,16 @@ function LoginPage() {
   const [requestState, setRequestState] = useState<RequestState>('idle')
   const [message, setMessage] = useState('')
 
-  async function signInWithProvider(provider: 'google' | 'azure') {
+  async function signInWithGoogle() {
     if (!supabase) return
 
     setRequestState('loading')
     setMessage('')
 
     const { error } = await supabase.auth.signInWithOAuth({
-      provider,
+      provider: 'google',
       options: {
         redirectTo: window.location.origin,
-        ...(provider === 'azure' ? { scopes: 'email' } : {}),
       },
     })
 
@@ -75,16 +74,9 @@ function LoginPage() {
             <button
               type="button"
               disabled={!isSupabaseConfigured || requestState === 'loading'}
-              onClick={() => signInWithProvider('google')}
+              onClick={signInWithGoogle}
             >
               Continue with Google
-            </button>
-            <button
-              type="button"
-              disabled={!isSupabaseConfigured || requestState === 'loading'}
-              onClick={() => signInWithProvider('azure')}
-            >
-              Continue with Microsoft
             </button>
           </div>
 
