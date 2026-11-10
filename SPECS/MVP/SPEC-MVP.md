@@ -2,7 +2,11 @@
 
 ## 1. Goal
 Build a cloud-deployed web application where a candidate can upload a resume and receive an interactive professional profile.
-The candidate can review and edit the generated profile.
+AI asks follow-up questions to clarify and enrich the candidate's information,
+then proposes polished profile content. The candidate reviews and confirms the
+result, can manually edit it, and saves an interactive professional profile.
+In this MVP, polishing means improving profile content; generating a revised
+PDF/DOCX resume is outside scope.
 A recruiter/company can access the shared candidate profile and ask natural-language questions about the candidate.
 
 ## 2. MVP User Types
@@ -11,6 +15,8 @@ A recruiter/company can access the shared candidate profile and ask natural-lang
 - Upload resume
 - Generate profile from resume
 - View generated profile
+- Answer or skip AI follow-up questions
+- Review and approve polished profile content
 - Edit/correct profile information
 - Share profile with recruiter/company
 
@@ -25,12 +31,19 @@ A recruiter/company can access the shared candidate profile and ask natural-lang
 2. Candidate uploads a resume.
 3. System extracts resume content.
 4. AI converts the resume into structured profile data.
-5. System displays an interactive candidate profile.
-6. Candidate can correct or edit the generated information.
-7. Candidate receives a shareable profile link.
-8. Recruiter opens the profile.
-9. Recruiter asks questions about the candidate.
-10. AI answers using the candidate's information.
+5. System saves the parsed result as a private draft.
+6. AI asks relevant follow-up questions; the candidate can answer or skip them.
+7. AI proposes clearer wording and a polished profile using supported facts.
+8. Candidate reviews the proposal, requests revisions or edits it, and confirms it.
+9. Candidate can make further manual edits and explicitly save the interactive profile.
+10. Candidate separately enables a shareable profile link.
+11. Recruiter opens the saved shared profile and asks questions.
+12. AI answers using only the approved, saved profile information.
+
+Draft work is persisted privately so the candidate can resume after refresh or
+login. Saving a draft is distinct from confirming a proposal, saving the final
+profile, and enabling sharing. Skipping questions or declining AI wording must
+not prevent the candidate from reviewing and saving a factual profile.
 
 ## 4. Core Features
 ### Authentication
@@ -53,19 +66,33 @@ Examples may include:
 - Certifications
 - Volunteering
 - Awards
+### Follow-up Questions and Profile Polishing
+- Questions address meaningful gaps, unclear facts, and missing project or work details.
+- Candidates can answer, correct previous answers, skip, and finish questioning.
+- AI improves wording using resume facts and candidate-provided information.
+- AI must not invent achievements, metrics, skills, qualifications, or employment facts.
+- Generated headlines and summaries are allowed here, subject to candidate approval.
+- Proposed changes remain private until reviewed and explicitly saved.
+- See [03 - Profile Refinement](./03-ProfileRefinement.md).
 ### Interactive Candidate Profile
 - Generated information is displayed as a structured profile.
 - Profile sections can vary between candidates.
 - Candidate can edit incorrect or missing information.
 - Candidate edits become the authoritative profile information.
+- Confirmation, manual editing, saving, and draft recovery follow
+  [04 - Profile Review and Saving](./04-ProfileReviewAndSaving.md).
 
 ### Profile Sharing
 - Candidate can generate/use a shareable profile URL.
 - Recruiter does not need access to candidate editing functionality.
+- Sharing is opt-in and revocable. Only the saved profile is exposed; drafts,
+  follow-up answers, original files, and extracted text remain private.
 
 ### Recruiter Q&A
 - Recruiter can ask natural-language questions.
-- Answers must be based on the candidate profile/resume information.
+- Answers must be based only on the current approved, saved shared profile.
+- Private resume text, refinement conversations, and superseded facts must not
+  be used to reintroduce information the candidate removed or corrected.
 - The system should avoid inventing information not present in the candidate data.
 ## 5. Out of Scope for MVP
 The MVP will NOT include:
@@ -76,6 +103,8 @@ The MVP will NOT include:
 - Recruiter candidate search
 - Recommendation algorithms connecting candidates and companies
 - Full recruitment marketplace
+- Revised PDF/DOCX resume generation or export
+- Resume scoring and job-specific resume tailoring
 
 These may be part of the future/ambitious version.
 ## 6. Deployment Requirement
@@ -115,6 +144,19 @@ Deployment:
 - created_at
 - updated_at
 
+### Private Profile Draft / Refinement Session
+- candidate profile and source resume references
+- base saved-profile revision (when one exists)
+- parsed baseline and current draft in the v1 profile shape
+- persisted questions, answers, skipped questions, and proposed changes
+- workflow state, revision, and confirmation reference
+- created_at and updated_at
+
+Draft state and refinement history are separate from public profile content.
+The candidate profile retains the last explicitly saved version while a new
+draft is being worked on. Resume processing status describes parsing only;
+it must not be reused as the refinement or approval state.
+
 ### Resume
 - id
 - candidate_profile_id
@@ -134,6 +176,8 @@ Deployment:
 - content
 - created_at
 
+Conversation and Message above refer to recruiter Q&A. Candidate refinement
+history is private and must be distinguishable from recruiter conversations.
 The exact database schema may change as individual feature specifications are developed.
 ## 9. MVP Completion Criteria
 
@@ -141,9 +185,31 @@ The MVP is considered functional when:
 - A candidate can upload a resume.
 - A candidate profile is automatically generated.
 - Different resume structures can be represented.
+- AI asks relevant follow-up questions and supports skipping them.
+- AI proposes polished content grounded in the resume and candidate answers.
+- Candidate reviews and confirms the exact proposed result before final saving.
 - Candidate can edit generated information.
 - Profile changes persist.
+- Private draft work can be resumed without changing the last saved profile.
+- AI failures, retries, and re-uploads do not silently overwrite saved edits.
 - Candidate profile can be accessed through a shared link.
 - Recruiter can ask questions about the candidate.
 - Answers are grounded in the candidate's stored information.
 - Application is deployed and accessible online.
+
+## 10. Specification Map and Implementation Boundary
+
+| Specification | Responsibility |
+| --- | --- |
+| [01 - Resume Parsing](./01-ResumeParsing.md) | Secure upload, extraction, factual parsing, and parsing failures/retries. |
+| [02 - Candidate Profile Contract](./02-CandidateProfileContract.md) | Shared v1 content shape, validation, and database mapping. |
+| [03 - Profile Refinement](./03-ProfileRefinement.md) | Private follow-up questions, candidate answers, and proposed polishing. |
+| [04 - Profile Review and Saving](./04-ProfileReviewAndSaving.md) | Review, confirmation, manual editing, persistence, and revision safety. |
+
+These documents describe target behavior, not a claim that every feature is
+implemented. The current baseline includes login, upload, parsing, and viewing
+the stored profile. Refinement, approval, manual editing, sharing, recruiter
+Q&A, and public deployment remain subsequent work. The existing parser writes
+directly to the candidate profile; draft isolation must be introduced before
+implementing the refinement workflow. Detailed sharing and recruiter Q&A API/UI
+specifications must be written before implementing those later features.

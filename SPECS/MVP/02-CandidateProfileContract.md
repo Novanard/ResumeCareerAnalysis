@@ -9,6 +9,10 @@ output must use this contract.
 This document freezes schema version 1. Changes that break this shape require a
 new schema version.
 
+The same content shape is used for parsed drafts, refined proposals, and saved
+profiles. Workflow state, revisions, questions, answers, and approval records
+are stored separately; they are not extra keys in this JSON contract.
+
 ## 2. Complete JSON Shape
 
 Every key shown below is required. Unknown scalar values use `null`. Missing
@@ -97,7 +101,10 @@ collections use `[]`.
 }
 ```
 
-## 3. Extraction Rules
+## 3. Extraction Rules and Later Refinement
+
+The CV-only sourcing and extract-only headline/summary rules below apply to
+initial parsing (specification 01).
 
 * Only include information explicitly supported by the CV.
 * Do not guess or invent missing facts.
@@ -113,6 +120,17 @@ collections use `[]`.
   not generated marketing content.
 * Uncertainty belongs in `rawMetadata.warnings`, not in per-field confidence
   values.
+
+During refinement (specification 03), candidate answers and manual corrections
+can add or supersede facts. AI may propose rewritten descriptions and generated
+headlines/summaries supported by those facts. Candidate approval and explicit
+saving are required under specification 04. Shape, date, null, collection, and
+no-invention rules continue to apply. Calculated scores and years of experience
+remain outside scope.
+
+`rawMetadata.source` remains `"cv"` to identify the profile's original import;
+it is not a claim that every later field came verbatim from that CV. Refinement
+sources and approvals are recorded separately, without changing the v1 shape.
 
 ## 4. Dates and Current Status
 
@@ -142,7 +160,7 @@ Do not duplicate named sections such as experience or education inside
 
 ## 6. Database Mapping
 
-The live `candidate_profiles` table already supports this contract:
+The live `candidate_profiles` table already supports the saved content mapping:
 
 | JSON field | Database destination |
 | --- | --- |
@@ -154,6 +172,11 @@ The live `candidate_profiles` table already supports this contract:
 `fullName`, `headline`, and `summary` must not also be stored in
 `profile_data`. Candidate edits will later become the authoritative values in
 these same locations.
+
+Private drafts and proposals use the same content contract in separate storage.
+They must not overwrite these saved-profile fields until explicit final saving.
+The table's existing support for this content shape does not imply that draft,
+revision, or confirmation storage is already implemented.
 
 ## 7. Validation Requirements
 
@@ -174,6 +197,6 @@ Invalid output must not overwrite an existing candidate profile.
 * Evidence arrays
 * Calculated years of experience
 * Skill proficiency scoring
-* Conversation or message persistence
+* Conversation or message persistence inside the profile JSON
 * Generated career recommendations
-* Generated professional summaries
+* Generated professional summaries during initial parsing (allowed later in refinement)

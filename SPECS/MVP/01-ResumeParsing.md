@@ -51,8 +51,13 @@ already performed validation.
 7. Text is extracted from the uploaded resume.
 8. Extracted text is sent to the AI parsing process.
 9. AI converts the resume into structured candidate data.
-10. Structured data is stored in the candidate profile.
-11. Candidate is redirected to or shown the generated profile.
+10. Valid structured data is persisted as a private parsed draft.
+11. Candidate is shown the draft and can proceed to follow-up questions and
+    polishing under [03-ProfileRefinement.md](./03-ProfileRefinement.md).
+
+The current implementation writes parsed data directly to the candidate profile.
+The target MVP requires a separate draft before refinement is implemented;
+parsing success must not imply candidate confirmation or final saving.
 
 ---
 
@@ -90,6 +95,11 @@ and can later be retried using `POST /api/resumes/:resumeId/parse`.
 Processing states are: `uploaded`, `text_extracted`, `parsing`, `parsed`, and
 `parsing_failed`. Invalid AI output is rejected before candidate profile data is
 updated, so a failed retry cannot overwrite the last valid profile.
+
+Parsing remains factual extraction only. It does not generate a new summary,
+ask follow-up questions, or polish wording. Those operations belong to the
+separate refinement stage. In the target workflow, valid parsing output updates
+the parsed draft, never the last approved, saved profile.
 
 The parser must not assume that every resume contains the same sections.
 
@@ -163,9 +173,11 @@ The exact JSONB mapping is defined in
 
 A candidate should be able to upload another resume in the future.
 
-For the MVP, uploading a new resume may replace or regenerate the current generated profile.
-
-The application should avoid silently deleting previous data before the new resume has been successfully processed.
+Uploading a new resume starts a new private draft. The last approved, saved
+profile remains unchanged until the candidate reviews and saves its replacement.
+Replacing an existing draft with unsaved work requires an explicit candidate
+choice. Successful parsing or retries must not silently overwrite candidate
+edits or apply results from an older upload to a newer draft.
 
 The exact resume-version-history behavior is outside the initial MVP unless required later.
 
@@ -267,6 +279,7 @@ This specification does not cover:
 
 * Candidate profile UI design
 * Candidate editing of generated information
+* Follow-up questions, polishing, and approval (see specifications 03 and 04)
 * Recruiter access
 * Recruiter Q&A
 * Job listings
