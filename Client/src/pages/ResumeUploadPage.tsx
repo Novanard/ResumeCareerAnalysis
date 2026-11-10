@@ -68,7 +68,7 @@ function ResumeUploadPage({
       setStatus({
         type: 'success',
         message: resume.processing_status === 'parsed'
-          ? 'Resume uploaded and candidate profile generated.'
+          ? 'Resume uploaded and private profile draft generated.'
           : `Resume uploaded and text extracted. AI parsing is ready to be connected. Resume ID: ${resume.id}`,
       })
     } catch (error) {
@@ -85,7 +85,7 @@ function ResumeUploadPage({
         <span className="brand">Career Profile</span>
         <div className="header-actions">
           <button className="header-link" type="button" onClick={onViewProfile}>
-            View profile preview
+            View private draft
           </button>
           <button className="header-link" type="button" onClick={onSignOut}>
             Sign out

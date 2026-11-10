@@ -7,7 +7,6 @@ class CandidateProfileServiceError extends Error {
 }
 
 function createCandidateProfileService(supabaseClient) {
-  const { toCandidateProfileRow } = require("../mappers/candidateProfileMapper");
   return {
     async ensureProfile(user) {
       const { data: existingProfile, error: selectError } = await supabaseClient
@@ -44,19 +43,7 @@ function createCandidateProfileService(supabaseClient) {
       return createdProfile;
     },
 
-    async saveParsedProfile({ profileId, parsedProfile }) {
-      const { data, error } = await supabaseClient
-        .from("candidate_profiles")
-        .update(toCandidateProfileRow(parsedProfile))
-        .eq("id", profileId)
-        .select()
-        .single();
 
-      if (error) {
-        throw new CandidateProfileServiceError("Unable to save parsed candidate profile");
-      }
-      return data;
-    },
   };
 }
 

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import CandidateQuestionBox from '../components/candidate/CandidateQuestionBox'
-import { getCandidateProfile } from '../services/api'
-import type { CandidateProfile } from '../types/candidate'
+import ProfileSections from '../components/candidate/ProfileSections'
+import ProfileReview from '../components/candidate/ProfileReview'
+import ProfileFollowupQuestions from '../components/candidate/ProfileFollowupQuestions'
+import { getCandidateProfileDraft, type ProfileDraft } from '../services/api'
 import '../styles/candidate-profile.css'
 
 interface CandidateProfilePageProps {
@@ -10,18 +11,19 @@ interface CandidateProfilePageProps {
   onSignOut: () => void
 }
 
-function period(start: string | null, end: string | null, current: boolean | null) {
-  return [start, current ? 'Present' : end].filter(Boolean).join(' – ') || 'Date not provided'
-}
-
 function CandidateProfilePage({ accessToken, onBackToUpload, onSignOut }: CandidateProfilePageProps) {
-  const [profile, setProfile] = useState<CandidateProfile | null>(null)
+  const [draft, setDraft] = useState<ProfileDraft | null>(null)
+  const profile = draft?.content
   const [error, setError] = useState('')
+  const [dirty, setDirty] = useState(false)
+  function leave(action: () => void) {
+    if (!dirty || window.confirm('You have unsaved changes. Leave and discard them?')) action()
+  }
 
   useEffect(() => {
     const controller = new AbortController()
-    getCandidateProfile(accessToken, controller.signal)
-      .then(setProfile)
+    getCandidateProfileDraft(accessToken, controller.signal)
+      .then(setDraft)
       .catch((reason: unknown) => {
         if (!controller.signal.aborted) {
           setError(reason instanceof Error ? reason.message : 'Unable to load candidate profile.')
@@ -33,9 +35,9 @@ function CandidateProfilePage({ accessToken, onBackToUpload, onSignOut }: Candid
   if (error || !profile) {
     return (
       <main className="connection-error" role={error ? 'alert' : 'status'}>
-        <h1>{error ? 'Unable to show profile' : 'Loading parsed profile...'}</h1>
+        <h1>{error ? 'Unable to show profile' : 'Loading private draft...'}</h1>
         {error && <p>{error}</p>}
-        {error && <button className="primary-button" type="button" onClick={onBackToUpload}>Back to upload</button>}
+        {error && <button className="primary-button" type="button" onClick={() => leave(onBackToUpload)}>Back to upload</button>}
       </main>
     )
   }
@@ -48,13 +50,14 @@ function CandidateProfilePage({ accessToken, onBackToUpload, onSignOut }: Candid
       <header className="site-header">
         <span className="brand">Career Profile</span>
         <div className="header-actions">
-          <button className="header-link" type="button" onClick={onBackToUpload}>Upload resume</button>
-          <button className="header-link" type="button" onClick={onSignOut}>Sign out</button>
+          <button className="header-link" type="button" onClick={() => leave(onBackToUpload)}>Upload resume</button>
+          <button className="header-link" type="button" onClick={() => leave(onSignOut)}>Sign out</button>
         </div>
       </header>
 
       <main className="profile-page">
-        <p className="eyebrow">Candidate Profile</p>
+        <p className="eyebrow">{draft?.state === 'saved' ? 'Saved candidate profile' : 'Private profile draft'}</p>
+        <p>{draft?.state === 'saved' ? 'Your approved profile is saved.' : 'Refine your profile, review the result, and approve the final content.'}</p>
         <section className="profile-intro" aria-labelledby="candidate-name">
           <div className="avatar" aria-hidden="true">{initials}</div>
           <div>
@@ -64,51 +67,13 @@ function CandidateProfilePage({ accessToken, onBackToUpload, onSignOut }: Candid
           </div>
         </section>
 
-        <div className="profile-grid">
-          <div className="profile-content">
-            <section className="profile-section" aria-labelledby="skills-title">
-              <h2 id="skills-title">Skills</h2>
-              <ul className="skill-list">
-                {profile.skills.map((skill, index) => <li key={`${skill.name}-${index}`}>{skill.name || 'Unnamed skill'}</li>)}
-              </ul>
-            </section>
+        {draft && draft.state !== 'refining' ? (
+          <ProfileReview key={`${draft.id}:${draft.revision}`} draft={draft} accessToken={accessToken} onUpdate={setDraft} onDirty={setDirty} />
+        ) : <div className="profile-grid">
+          <ProfileSections profile={profile} />
 
-            <section className="profile-section" aria-labelledby="experience-title">
-              <h2 id="experience-title">Experience</h2>
-              <div className="timeline">
-                {profile.experience.map((item, index) => (
-                  <article className="timeline-item" key={`${item.company}-${item.role}-${index}`}>
-                    <div className="item-heading">
-                      <div><h3>{item.role || 'Role not provided'}</h3><p className="organization">{item.company || 'Company not provided'}</p></div>
-                      <p className="period">{period(item.startDate, item.endDate, item.current)}</p>
-                    </div>
-                    <p>{item.description.join(' ') || 'No description provided.'}</p>
-                  </article>
-                ))}
-              </div>
-            </section>
-
-            <section className="profile-section" aria-labelledby="education-title">
-              <h2 id="education-title">Education</h2>
-              {profile.education.map((item, index) => (
-                <article className="education-item" key={`${item.institution}-${item.degree}-${index}`}>
-                  <div><h3>{[item.degree, item.field].filter(Boolean).join(', ') || 'Qualification not provided'}</h3><p className="organization">{item.institution || 'Institution not provided'}</p></div>
-                  <p className="period">{period(item.startDate, item.endDate, item.current)}</p>
-                </article>
-              ))}
-            </section>
-
-            <section className="profile-section" aria-labelledby="parsed-json-title">
-              <h2 id="parsed-json-title">DeepSeek parsed data</h2>
-              <details>
-                <summary>View exact parsed JSON</summary>
-                <pre className="parsed-profile-json">{JSON.stringify(profile, null, 2)}</pre>
-              </details>
-            </section>
-          </div>
-
-          <CandidateQuestionBox candidateName={displayName} />
-        </div>
+          {draft && <ProfileFollowupQuestions key={draft.id} draft={draft} accessToken={accessToken} onUpdate={setDraft} onDirty={setDirty} />}
+        </div>}
       </main>
     </div>
   )

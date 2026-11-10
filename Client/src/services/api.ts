@@ -29,23 +29,42 @@ interface UploadResumeResponse {
 
 const apiUrl = import.meta.env.VITE_API_URL?.replace(/\/$/, '')
 
-export async function getCandidateProfile(
+export interface FollowupQuestion {
+  id: string
+  section: string
+  text: string
+  reason: string
+  status: 'pending' | 'answered' | 'skipped'
+  answer: string | null
+}
+
+export interface ProfileDraft {
+  review_baseline: CandidateProfile | null
+  proposal: CandidateProfile | null
+  questions: FollowupQuestion[]
+  questions_generated: boolean
+  questions_finished: boolean
+  id: string
+  revision: number
+  state: 'refining' | 'review' | 'confirmed' | 'saved'
+  source_resume_id: string
+  base_profile_revision: number
+  content: CandidateProfile
+}
+
+export async function getCandidateProfileDraft(
   accessToken: string,
   signal?: AbortSignal,
-): Promise<CandidateProfile> {
+): Promise<ProfileDraft> {
   if (!apiUrl) throw new Error('The frontend API URL is not configured.')
-
-  const response = await fetch(`${apiUrl}/api/profile`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-    signal,
+  const response = await fetch(`${apiUrl}/api/profile/draft`, {
+    headers: { Authorization: `Bearer ${accessToken}` }, signal,
   })
-  const body = (await response.json()) as { profile?: CandidateProfile; error?: string }
-
-  if (!response.ok || !body.profile) {
-    throw new Error(body.error || 'Unable to load candidate profile.')
+  const body = (await response.json()) as { draft?: ProfileDraft; error?: string }
+  if (!response.ok || !body.draft) {
+    throw new Error(body.error || 'Unable to load profile draft.')
   }
-
-  return body.profile
+  return body.draft
 }
 
 export async function verifyBackendSession(
@@ -117,4 +136,18 @@ export async function retryResumeParsing(
     throw new Error('error' in body && body.error ? body.error : 'Unable to parse resume.')
   }
   return (body as UploadResumeResponse).resume
+}
+
+export async function updateRefinement(
+  draftId: string, action: string, accessToken: string, input: Record<string, unknown>,
+): Promise<ProfileDraft> {
+  if (!apiUrl) throw new Error('The frontend API URL is not configured.')
+  const response = await fetch(`${apiUrl}/api/profile/drafts/${draftId}/${action}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  const body = await response.json() as { draft?: ProfileDraft; error?: string }
+  if (!response.ok || !body.draft) throw new Error(body.error || 'Unable to update refinement.')
+  return body.draft
 }

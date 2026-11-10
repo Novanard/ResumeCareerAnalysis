@@ -208,8 +208,9 @@ The MVP is considered functional when:
 
 These documents describe target behavior, not a claim that every feature is
 implemented. The current baseline includes login, upload, parsing, and viewing
-the stored profile. Refinement, approval, manual editing, sharing, recruiter
-Q&A, and public deployment remain subsequent work. The existing parser writes
-directly to the candidate profile; draft isolation must be introduced before
-implementing the refinement workflow. Detailed sharing and recruiter Q&A API/UI
+a private parsed draft. Parsing now persists separate drafts with a parsed
+baseline and revision metadata, preserving previously stored profiles.
+Follow-up questions, AI polishing, review, manual editing, and explicit final
+saving are implemented. Sharing, recruiter Q&A, and public deployment remain
+subsequent work. Live Supabase/AI end-to-end verification is still required. Detailed sharing and recruiter Q&A API/UI
 specifications must be written before implementing those later features.

@@ -37,7 +37,7 @@ from resume processing states such as `parsed` and `parsing_failed`.
 | Confirm current content | Enter confirmed with the approved draft revision. |
 | Change confirmed content | Return to review; clear prior confirmation. |
 | Explicitly approve and save current content | Validate and atomically update the saved profile; mark draft saved. |
-| Edit a saved profile or upload another resume | Create a new private draft based on the saved revision; preserve the saved profile. |
+| Edit a saved profile or upload another resume | Open a private editing revision (or a separate draft for a new upload) based on the saved revision; preserve the saved profile. |
 
 Persist private draft work separately from the last saved profile. Track draft
 revision, base saved-profile revision, and the revision approved by the candidate.
@@ -89,3 +89,20 @@ own specifications before that work begins.
   candidate work.
 - Sharing is never enabled automatically by parsing, confirmation, or saving.
 - Other users cannot read drafts or modify the candidate's profile.
+
+## 7. Current Implementation
+
+Review includes editable fields for all candidate sections, adding/removing
+entries, before/after section comparisons, rejecting AI changes, returning to
+questions, and optional repeated polishing. Saving draft edits persists private
+work. The explicit **Approve and save final profile** action combines final
+confirmation and saving for the exact current revision. There is no separate
+confirmation button. Changes require another explicit approval when saved.
+
+The final database function checks ownership and both draft/saved-profile
+revisions, and writes profile fields, approval timestamp, and draft saved state
+in one transaction. Later editing reopens the existing private draft record at
+a new revision based on current saved content; it does not change the saved
+profile until final saving. Original parsed baseline remains available in storage;
+complete version history is outside this implementation. Sharing and recruiter
+Q&A are not implemented.

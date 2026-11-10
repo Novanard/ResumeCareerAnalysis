@@ -18,26 +18,32 @@ const { createCandidateProfileParser, CandidateProfileParsingError } = require("
 const { createResumeParsingService } = require("./services/resumeParsingService");
 const { createDeepSeekClientFromEnv } = require("./ai/deepSeekClient");
 const { fromCandidateProfileRow } = require("./mappers/candidateProfileMapper");
+const { createProfileDraftService } = require("./services/profileDraftService");
+
+const { createProfileRefinementService } = require("./services/profileRefinementService");
 
 function createApp({
   supabaseClient,
   resumeService,
   candidateProfileService,
+  profileDraftService,
   resumeTextExtractor,
   modelClient,
   resumeParsingService,
+  profileRefinementService,
 } = {}) {
   const supabase = supabaseClient || require("./supabase");
   const resumes = resumeService || createResumeService(supabase);
   const candidateProfiles =
     candidateProfileService || createCandidateProfileService(supabase);
   const textExtractor = resumeTextExtractor || createResumeTextExtractor();
-  const parser = createCandidateProfileParser(
-    modelClient || createDeepSeekClientFromEnv(),
-  );
+  const drafts = profileDraftService || createProfileDraftService(supabase);
+  const aiClient = modelClient || createDeepSeekClientFromEnv();
+  const parser = createCandidateProfileParser(aiClient);
+  const refinement = profileRefinementService || createProfileRefinementService({ supabase, modelClient: aiClient });
   const resumeParser = resumeParsingService || createResumeParsingService({
     resumeService: resumes,
-    candidateProfileService: candidateProfiles,
+    profileDraftService: drafts,
     parser,
   });
   const authenticateUser = createAuthenticateUser(supabase);
@@ -62,6 +68,40 @@ function createApp({
       return res.status(500).json({ error: "Unable to prepare candidate profile" });
     }
   });
+
+  app.get("/api/profile/draft", authenticateUser, async (req, res) => {
+    try {
+      const profile = await candidateProfiles.ensureProfile(req.user);
+      const draft = await drafts.getLatestDraft({ profileId: profile.id });
+      return res.json({ draft });
+    } catch (error) {
+      if (error instanceof CandidateProfileServiceError) {
+        return res.status(error.statusCode).json({ error: error.message });
+      }
+      return res.status(500).json({ error: "Unable to load profile draft" });
+    }
+  });
+
+  const refinementActions = [
+    ['questions', 'generate'], ['questions/:questionId', 'respond'], ['finish', 'finish'],
+    ...['polish', 'review', 'edit', 'reject', 'save', 'reopen'].map(action => [action, action]),
+  ];
+  for (const [path, method] of refinementActions) {
+    app.post(`/api/profile/drafts/:draftId/${path}`, authenticateUser, async (req, res) => {
+      try {
+        const draft = await refinement[method]({
+          revision: req.body?.revision, status: req.body?.status,
+          answer: req.body?.answer, finished: req.body?.finished,
+          content: req.body?.content, approved: req.body?.approved,
+          userId: req.user.id, draftId: req.params.draftId, questionId: req.params.questionId,
+        });
+        return res.json({ draft });
+      } catch (error) {
+        return res.status(error instanceof CandidateProfileServiceError ? error.statusCode : 500)
+          .json({ error: error instanceof CandidateProfileServiceError ? error.message : 'Unable to update refinement' });
+      }
+    });
+  }
 
   app.get("/api/profile", authenticateUser, async (req, res) => {
     try {
@@ -122,7 +162,7 @@ function createApp({
           throw error;
         }
       } catch (error) {
-        if (error instanceof ResumeServiceError) {
+        if (error instanceof ResumeServiceError || error instanceof CandidateProfileServiceError || error instanceof CandidateProfileParsingError) {
           return res.status(error.statusCode).json({ error: error.message });
         }
 

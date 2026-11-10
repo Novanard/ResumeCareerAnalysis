@@ -86,3 +86,18 @@ stale result and offer regeneration. Retries must not duplicate persisted answer
 - Another candidate and a recruiter cannot access private refinement history.
 - The candidate can reach final review without answering questions or accepting
   AI polishing.
+
+## 7. Current Implementation Boundary
+
+The question stage is implemented: one persisted batch of up to five questions,
+answer/skip/revise controls, finish/resume, owner-only access, and optimistic
+revision checks. Existing drafts receive empty question history when migration
+202611100002 is applied. Questions are generated explicitly by the candidate.
+AI polishing and repeated proposal generation are implemented, with full v1
+validation and revision checks before storing results. Review and editing are
+implemented under specification 04. Question answers alone do not change profile
+content; the candidate explicitly generates a proposal. Only newly supplied or
+changed answers are reapplied in later polishing rounds so unchanged historical
+answers do not restore manually deleted facts. Questions remain one batch per
+import; candidates can return to revise its answers. Automatic generation of
+additional question batches is not implemented.

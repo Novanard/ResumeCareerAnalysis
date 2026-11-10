@@ -1,6 +1,6 @@
 const { CandidateProfileParsingError } = require("./candidateProfileParser");
 
-function createResumeParsingService({ resumeService, candidateProfileService, parser }) {
+function createResumeParsingService({ resumeService, profileDraftService, parser }) {
   return {
     isConfigured: parser.isConfigured,
     async parseResume({ resumeId, userId }) {
@@ -24,8 +24,9 @@ function createResumeParsingService({ resumeService, candidateProfileService, pa
       await resumeService.updateProcessingState({ resumeId, status: "parsing", error: null });
       try {
         const parsedProfile = await parser.parse(resume.extracted_text);
-        const profile = await candidateProfileService.saveParsedProfile({
-          profileId: resume.candidate_profile_id,
+        const draft = await profileDraftService.saveParsedDraft({
+          userId,
+          resumeId,
           parsedProfile,
         });
         const updatedResume = await resumeService.updateProcessingState({
@@ -34,7 +35,7 @@ function createResumeParsingService({ resumeService, candidateProfileService, pa
           error: null,
           parsedAt: new Date().toISOString(),
         });
-        return { resume: updatedResume, profile };
+        return { resume: updatedResume, draft };
       } catch (error) {
         await resumeService.updateProcessingState({
           resumeId,
@@ -47,4 +48,4 @@ function createResumeParsingService({ resumeService, candidateProfileService, pa
   };
 }
 
-module.exports = { createResumeParsingService };
+module.exports = { createResumeParsingService }; 

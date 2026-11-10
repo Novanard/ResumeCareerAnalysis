@@ -15,16 +15,16 @@ test("resume parsing persists validated data and marks the resume parsed", async
       },
       async updateProcessingState(state) { states.push(state); return { id: "r1", ...state }; },
     },
-    candidateProfileService: {
-      async saveParsedProfile(input) { saved = input; return { id: "p1" }; },
+    profileDraftService: {
+      async saveParsedDraft(input) { saved = input; return { id: "p1" }; },
     },
     parser: { isConfigured: () => true, async parse() { return validCandidateProfile; } },
   });
   const result = await service.parseResume({ resumeId: "r1", userId: "u1" });
-  assert.deepEqual(saved, { profileId: "p1", parsedProfile: validCandidateProfile });
+  assert.deepEqual(saved, { userId: "u1", resumeId: "r1", parsedProfile: validCandidateProfile });
   assert.equal(states[0].status, "parsing");
   assert.equal(states[1].status, "parsed");
-  assert.equal(result.profile.id, "p1");
+  assert.equal(result.draft.id, "p1");
 });
 
 test("failed parsing never writes a candidate profile and records retryable state", async () => {
@@ -36,7 +36,7 @@ test("failed parsing never writes a candidate profile and records retryable stat
       async getOwnedResume() { return { id: "r1", candidate_profile_id: "p1", extracted_text: "resume" }; },
       async updateProcessingState(state) { states.push(state); return state; },
     },
-    candidateProfileService: { async saveParsedProfile() { writes += 1; } },
+    profileDraftService: { async saveParsedDraft() { writes += 1; } },
     parser: { isConfigured: () => true, async parse() { throw parseError; } },
   });
   await assert.rejects(service.parseResume({ resumeId: "r1", userId: "u1" }), parseError);

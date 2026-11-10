@@ -55,9 +55,11 @@ already performed validation.
 11. Candidate is shown the draft and can proceed to follow-up questions and
     polishing under [03-ProfileRefinement.md](./03-ProfileRefinement.md).
 
-The current implementation writes parsed data directly to the candidate profile.
-The target MVP requires a separate draft before refinement is implemented;
-parsing success must not imply candidate confirmation or final saving.
+Parsing writes to a separate private draft, not to the saved candidate profile.
+Parsing success does not imply candidate confirmation or final saving.
+Each uploaded resume retains its own draft; retries return an existing draft
+without replacing its content. Older uploads finishing later do not displace
+newer uploads in the draft preview.
 
 ---
 
