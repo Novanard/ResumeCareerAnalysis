@@ -84,6 +84,13 @@ own specifications before that work begins.
   through confirmation or an explicit approve-and-save action.
 - Draft persistence does not alter the last saved or shared profile.
 - Final saving persists all fields together and survives refresh/login.
+- Repeating the same successful final-save request returns the saved draft
+  without applying the profile update again or increasing the saved-profile revision.
+- A stale draft edit is rejected with HTTP 409 and leaves the current draft intact.
+- Final saving without explicit approval is rejected with HTTP 400 and leaves
+  the saved profile unchanged.
+- Reopening and persisting later private edits preserves the last saved profile;
+  a fresh login restores those private edits independently of saved content.
 - Failed or stale saves preserve both the last saved profile and recoverable draft.
 - Concurrent edits, re-uploads, and delayed AI responses cannot silently overwrite
   candidate work.
@@ -106,3 +113,27 @@ a new revision based on current saved content; it does not change the saved
 profile until final saving. Original parsed baseline remains available in storage;
 complete version history is outside this implementation. Sharing and recruiter
 Q&A are not implemented.
+
+## 8. Verification Coverage
+
+Run `node scripts/verify-live-workflow.js` from `Backend` against the migrated
+Supabase project. The API check must exercise:
+
+- Manual editing of a polished draft while the first final profile remains absent.
+- Rejection of a stale edit and a final-save request without approval.
+- Explicit approval and final saving through the actual PostgreSQL
+  `save_reviewed_profile_draft` function, followed by reading the saved content.
+- Retrying the same final save successfully.
+- Reopening the saved draft, persisting a private edit, and verifying that the
+  saved profile still contains its previously approved content.
+- Logging in again and recovering the acknowledged private edit.
+
+The live check uses a synthetic candidate and removes its temporary account,
+related database records, and uploaded storage files afterward. Cleanup errors
+must fail the check. It makes paid AI calls and must be invoked explicitly.
+
+This is an integration smoke check, not proof of every acceptance criterion.
+It currently checks a representative edited field, rather than every field's
+round trip, and does not measure the saved revision before/after a save retry.
+Full transaction rollback, competing saves from different drafts, browser review
+controls, and cross-user isolation need additional targeted verification.

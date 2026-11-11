@@ -267,8 +267,11 @@ This feature is considered complete when:
 * Resume text can be extracted.
 * Extracted content is converted into structured candidate data.
 * The parser supports different resume structures.
-* The generated structured data is persisted.
-* Refreshing the application does not remove the generated data.
+* The generated structured data is persisted as a private draft associated with
+  the uploaded resume and authenticated candidate, using the v1 contract in spec 02.
+* Initial parsing does not create an approved final profile or overwrite an
+  existing saved profile.
+* Refreshing or logging in again does not remove the persisted parsed draft.
 * Parsing failures are shown to the candidate instead of crashing the application.
 * Another user cannot modify the candidate's uploaded resume.
 * AI API credentials are kept exclusively on the backend.
@@ -292,3 +295,17 @@ This specification does not cover:
 * Full resume version history
 
 These features are covered by later specifications or future versions of the project.
+
+## 15. Verification Coverage
+
+Run `node scripts/verify-live-workflow.js` from `Backend` to exercise a real
+authenticated PDF upload with synthetic content, private Supabase file storage,
+text extraction, live AI parsing, and database draft persistence through the API.
+For a new candidate, the saved-profile endpoint must remain unavailable until
+explicit approval and final saving under spec 04. The live check also reloads
+the draft through the API to verify persistence.
+
+This smoke check covers PDF only. DOCX, invalid files, extraction failures,
+provider failures, retry/re-upload behavior, and ownership restrictions retain
+their acceptance requirements above; the smoke check alone does not establish
+complete coverage. Browser loading/error states require separate UI verification.

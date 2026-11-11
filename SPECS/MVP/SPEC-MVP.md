@@ -212,5 +212,10 @@ a private parsed draft. Parsing now persists separate drafts with a parsed
 baseline and revision metadata, preserving previously stored profiles.
 Follow-up questions, AI polishing, review, manual editing, and explicit final
 saving are implemented. Sharing, recruiter Q&A, and public deployment remain
-subsequent work. Live Supabase/AI end-to-end verification is still required. Detailed sharing and recruiter Q&A API/UI
+subsequent work. The live API smoke check in
+`Backend/scripts/verify-live-workflow.js` passed against Supabase and AI on
+2026-11-11, including the actual database final-save function. Coverage and
+remaining checks are recorded in specs 01, 03, and 04. Browser end-to-end
+verification and broader concurrency/security verification remain outstanding.
+Detailed sharing and recruiter Q&A API/UI
 specifications must be written before implementing those later features.

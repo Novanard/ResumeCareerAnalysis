@@ -104,3 +104,17 @@ Review endpoints use `POST /api/profile/drafts/:draftId/:action` with the curren
 `revision`: `polish`, `review`, `edit` (plus complete `content`), `reject`,
 `save` (plus `approved: true`), and `reopen`. Existing finish/resume actions
 allow returning from review to questions.
+
+## Live workflow verification
+
+From `Backend`, run `node scripts/verify-live-workflow.js` with the backend
+environment configured and all migrations applied. This explicitly uses the
+live Supabase project and makes paid AI requests with synthetic resume data.
+It creates a temporary account, uploads and extracts a generated PDF, parses it,
+generates follow-up questions, saves answers/skips, polishes and edits the draft,
+and exercises the actual PostgreSQL final-save function and retry behavior.
+It also checks stale-edit rejection, private versus saved content, and draft
+recovery after a new login. A `finally` block removes test storage files and
+deletes the temporary account (cascading its database records); cleanup failures
+cause the command to fail. This API check does not replace browser interaction
+testing or a complete concurrency/security audit.

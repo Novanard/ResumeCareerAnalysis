@@ -101,3 +101,22 @@ changed answers are reapplied in later polishing rounds so unchanged historical
 answers do not restore manually deleted facts. Questions remain one batch per
 import; candidates can return to revise its answers. Automatic generation of
 additional question batches is not implemented.
+
+## 8. Verification Coverage
+
+Run `node scripts/verify-live-workflow.js` from `Backend` with live Supabase
+and AI configured. The synthetic candidate flow must:
+
+- Explicitly generate and persist questions from the parsed draft.
+- When questions exist, save an answer to the first question and skip remaining
+  questions; persist the answer/skip states and the finish action.
+- Reload the draft through the API and recover the exact acknowledged progress.
+- Generate a valid polished proposal with the live AI provider and proceed to
+  review under spec 04 without creating a saved final profile.
+
+The AI may validly return no questions; in that case this run does not exercise
+answer/skip behavior. Deterministic service tests cover those operations as well
+as answer corrections, failures, stale responses, and preservation of manual
+deletions. A successful live response verifies integration and schema validation;
+factual quality and question relevance still require review against the synthetic
+source and candidate answers. Browser interaction requires separate verification.
