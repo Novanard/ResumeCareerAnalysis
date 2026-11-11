@@ -206,6 +206,7 @@ The MVP is considered functional when:
 | [03 - Profile Refinement](./03-ProfileRefinement.md) | Private follow-up questions, candidate answers, and proposed polishing. |
 | [04 - Profile Review and Saving](./04-ProfileReviewAndSaving.md) | Review, confirmation, manual editing, persistence, and revision safety. |
 | [05 - Profile Sharing](./05-ProfileSharing.md) | Opt-in/revocable links, read-only public projection, sharing API/UI, and access checks. |
+| [06 - Recruiter Q&A](./06-RecruiterQA.md) | Proposed anonymous questions, saved-profile grounding, transient transcripts, access checks, and generation limits. |
 
 These documents describe target behavior, not a claim that every feature is
 implemented. The current baseline includes login, upload, parsing, and viewing
@@ -213,12 +214,14 @@ a private parsed draft. Parsing now persists separate drafts with a parsed
 baseline and revision metadata, preserving previously stored profiles.
 Follow-up questions, AI polishing, review, manual editing, and explicit final
 saving are implemented. Sharing is implemented locally, with its database
-migration and live/browser verification pending under spec 05. Recruiter Q&A
+migration applied and live sharing checks reported passing by the user; browser
+and deployment verification remain pending under spec 05. Recruiter Q&A
 and public deployment remain subsequent work. The live API smoke check in
 `Backend/scripts/verify-live-workflow.js` passed against Supabase and AI on
 2026-11-11, including the actual database final-save function. Coverage and
 remaining checks are recorded in specs 01, 03, and 04. Browser end-to-end
 verification and broader concurrency/security verification remain outstanding.
 The approved sharing API/UI specification and verification boundaries are
-recorded in spec 05. A detailed recruiter Q&A specification must still be
-written before implementing Q&A.
+recorded in spec 05. The proposed recruiter Q&A specification is recorded in
+spec 06 for review before implementation. Its transient, independent-question
+design defers the initial Conversation/Message database entities.

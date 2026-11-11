@@ -194,7 +194,10 @@ active URL, anonymous reads, private versus saved updates, revocation, and
 re-enabling with a fresh token. It requires applying migration
 `202611110001_profile_sharing.sql` and configuring `FRONTEND_ORIGIN` first.
 
-Pending: execute that live mode against the new migration; browser checks;
+The user reported all live `--sharing` checks passing after applying the migration.
+This report does not establish browser or deployment coverage.
+
+Pending: browser checks;
 targeted cross-user/database privilege and deletion checks; deployed frontend
 rewrites, cache headers, proxy trust, and access-log redaction verification.
 The rate limiter is in-memory per process; multiple backend instances require
