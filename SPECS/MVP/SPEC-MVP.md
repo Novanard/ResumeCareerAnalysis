@@ -205,6 +205,7 @@ The MVP is considered functional when:
 | [02 - Candidate Profile Contract](./02-CandidateProfileContract.md) | Shared v1 content shape, validation, and database mapping. |
 | [03 - Profile Refinement](./03-ProfileRefinement.md) | Private follow-up questions, candidate answers, and proposed polishing. |
 | [04 - Profile Review and Saving](./04-ProfileReviewAndSaving.md) | Review, confirmation, manual editing, persistence, and revision safety. |
+| [05 - Profile Sharing](./05-ProfileSharing.md) | Proposed opt-in/revocable links, read-only public projection, sharing API/UI, and access checks. |
 
 These documents describe target behavior, not a claim that every feature is
 implemented. The current baseline includes login, upload, parsing, and viewing
@@ -217,5 +218,6 @@ subsequent work. The live API smoke check in
 2026-11-11, including the actual database final-save function. Coverage and
 remaining checks are recorded in specs 01, 03, and 04. Browser end-to-end
 verification and broader concurrency/security verification remain outstanding.
-Detailed sharing and recruiter Q&A API/UI
-specifications must be written before implementing those later features.
+The proposed sharing API/UI specification is recorded in spec 05 for review
+before implementation. A detailed recruiter Q&A specification must still be
+written before implementing Q&A.
