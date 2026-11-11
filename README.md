@@ -118,3 +118,28 @@ recovery after a new login. A `finally` block removes test storage files and
 deletes the temporary account (cascading its database records); cleanup failures
 cause the command to fail. This API check does not replace browser interaction
 testing or a complete concurrency/security audit.
+
+## Profile sharing
+
+Apply `supabase/migrations/202611110001_profile_sharing.sql` after the earlier
+migrations. Set `FRONTEND_ORIGIN=http://localhost:5173` in `Backend/.env` (use
+the actual HTTPS frontend origin in production), then restart the backend.
+The profile page offers explicit enable/disable controls and a recoverable URL.
+Only approved saved content, including saved contact details, is shared.
+Re-enabling after revocation creates a new link; private draft edits stay private.
+
+Run `node scripts/verify-live-workflow.js --sharing` from `Backend` after setup
+to additionally check concurrent enables, anonymous reads, saved versus private
+content, revocation, and token rotation against the actual database. This mode
+has not yet been run against the new migration. The default live check remains
+available without the sharing migration.
+
+Set `SHARED_PROFILE_RATE_LIMIT` to the per-client requests/minute limit (default
+60). The limiter is per backend process; use shared infrastructure before scaling
+to multiple instances. When behind a proxy, set `TRUST_PROXY` to only its trusted
+IP addresses/CIDRs. Ensure backend/proxy/hosting access logs redact shared-route
+tokens and owner response URLs. Do not enable analytics on shared routes.
+Frontend hosting must rewrite `/shared/*` to `index.html`, send
+`Cache-Control: no-store` on those pages, and preserve the no-referrer and noindex
+directives. These hosting settings and browser interactions require deployment
+verification; this repository does not currently configure a hosting provider.

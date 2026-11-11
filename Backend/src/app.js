@@ -31,6 +31,7 @@ function createApp({
   modelClient,
   resumeParsingService,
   profileRefinementService,
+  profileSharingService,
 } = {}) {
   const supabase = supabaseClient || require("./supabase");
   const resumes = resumeService || createResumeService(supabase);
@@ -51,6 +52,9 @@ function createApp({
 
   app.use(cors());
   app.use(express.json());
+  require('./routes/profileSharing').registerProfileSharing(app, {
+    supabase, authenticateUser, service: profileSharingService,
+  });
 
   app.get("/api/health", (_req, res) => {
     res.json({ status: "ok" });

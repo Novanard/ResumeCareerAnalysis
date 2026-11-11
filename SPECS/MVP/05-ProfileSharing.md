@@ -2,7 +2,8 @@
 
 ## 1. Purpose and Status
 
-Proposed specification; sharing is not implemented yet.
+Approved specification. Local implementation is present; live migration and
+browser/deployment verification remain pending (see section 10).
 
 Let a candidate explicitly share their approved, saved professional profile
 with a recruiter through a read-only URL. This follows
@@ -176,3 +177,26 @@ Recruiter Q&A, recruiter accounts, search/discovery, per-recipient permissions,
 password-protected links, expiration dates, access analytics, multiple simultaneous
 links, field-level visibility, resume downloads, and social preview generation.
 This milestone introduces no automatic public sharing and no public profile list.
+
+## 10. Implementation and Verification Status
+
+Implemented: private sharing table and serialized enable/disable function;
+owner-only management endpoints; active-token public lookup with a nested
+allowlisted projection; per-process configurable rate limiting; sharing controls
+with disclosure and copy fallback; anonymous read-only frontend route.
+The frontend declares no-referrer/noindex policies and API responses use no-store.
+
+Backend automated tests cover authentication, session-derived ownership,
+projection exclusions, URL configuration, active/approved read checks, error
+responses, privacy headers, and rate limiting. The frontend builds and lints.
+The live script's `--sharing` mode covers concurrent enables, recovery of the
+active URL, anonymous reads, private versus saved updates, revocation, and
+re-enabling with a fresh token. It requires applying migration
+`202611110001_profile_sharing.sql` and configuring `FRONTEND_ORIGIN` first.
+
+Pending: execute that live mode against the new migration; browser checks;
+targeted cross-user/database privilege and deletion checks; deployed frontend
+rewrites, cache headers, proxy trust, and access-log redaction verification.
+The rate limiter is in-memory per process; multiple backend instances require
+a shared limiter. These are verification/deployment boundaries, not claims of
+completed acceptance criteria.

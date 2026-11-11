@@ -1,4 +1,40 @@
 .profile-page { width: min(1080px, calc(100% - 40px)); margin: 0 auto; padding: 56px 0 80px; }
+.sharing-card { margin-bottom: 40px; padding: 26px 28px 0; border: 1px solid #dbe4f0; border-radius: 18px; background: #fff; box-shadow: 0 4px 18px rgb(15 23 42 / 3%); }
+.sharing-heading-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.sharing-title { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.sharing-icon { display: grid; place-items: center; flex-shrink: 0; width: 46px; height: 46px; border-radius: 13px; background: #eff6ff; color: #2563eb; }
+.sharing-title h2 { margin: 0 0 5px; font-size: 1.12rem; letter-spacing: -.02em; }
+.sharing-title p { margin: 0; color: #64748b; font-size: .88rem; line-height: 1.5; }
+.sharing-badge { display: inline-flex; align-items: center; gap: 7px; flex-shrink: 0; padding: 6px 10px; border-radius: 30px; background: #f1f5f9; color: #64748b; font-size: .76rem; font-weight: 650; }
+.sharing-badge > span { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.sharing-badge.is-enabled { background: #ecfdf5; color: #047857; }
+.sharing-description { max-width: 710px; margin: 22px 0; color: #64748b; font-size: .9rem; line-height: 1.7; }
+.sharing-hint { color: #64748b; font-size: .85rem; }
+.sharing-link-group label { display: block; margin-bottom: 9px; color: #334155; font-size: .8rem; font-weight: 650; }
+.sharing-link-row { display: flex; align-items: center; gap: 10px; }
+.sharing-link-row input { flex: 1; min-width: 0; height: 46px; box-sizing: border-box; padding: 0 14px; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; color: #475569; font-family: ui-monospace, monospace; font-size: .82rem; text-overflow: ellipsis; }
+.sharing-card .primary-button { min-height: 46px; margin: 0; padding: 11px 18px; border: 0; border-radius: 10px; background: #2563eb; color: #fff; font: inherit; font-size: .88rem; font-weight: 650; cursor: pointer; white-space: nowrap; }
+.sharing-card .primary-button:hover:not(:disabled) { background: #1d4ed8; }
+.sharing-card button:disabled { opacity: .55; cursor: not-allowed; }
+.sharing-card :is(button, input, a, summary):focus-visible { outline: 3px solid #bfdbfe; outline-offset: 3px; }
+.sharing-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 18px; margin: 17px 0 22px; }
+.sharing-preview { color: #2563eb; font-size: .85rem; font-weight: 650; text-decoration: none; }
+.sharing-preview:hover { text-decoration: underline; }
+.sharing-preview span { margin-left: 4px; }
+.sharing-disable { margin-left: auto; padding: 7px 0; border: 0; background: transparent; color: #64748b; font: inherit; font-size: .82rem; cursor: pointer; }
+.sharing-disable:hover:not(:disabled) { color: #b91c1c; }
+.sharing-details { margin: 0 -28px; padding: 15px 28px; border-top: 1px solid #eef2f6; border-radius: 0 0 18px 18px; background: #fbfcfe; font-size: .8rem; color: #64748b; }
+.sharing-details summary { cursor: pointer; width: fit-content; }
+.sharing-details p { max-width: 760px; margin: 12px 0 0; line-height: 1.7; }
+.sharing-error { padding: 12px 14px; border-radius: 8px; background: #fff1f2; color: #be123c; font-size: .85rem; }
+.sharing-feedback { color: #047857; font-size: .85rem; }
+@media (max-width: 600px) {
+  .sharing-card { padding: 20px 18px 0; }
+  .sharing-heading-row { align-items: flex-start; flex-wrap: wrap; gap: 14px; }
+  .sharing-badge { margin-left: 60px; }
+  .sharing-link-row { align-items: stretch; flex-direction: column; }
+  .sharing-details { margin: 0 -18px; padding: 15px 18px; }
+}
 .profile-intro { display: flex; align-items: flex-start; gap: 22px; max-width: 760px; margin-bottom: 48px; }
 .avatar { display: grid; flex: 0 0 72px; width: 72px; height: 72px; place-items: center; border-radius: 18px; color: #fff; background: #2563eb; font-weight: 750; }
 h3 { margin-bottom: 5px; color: #1e293b; font-size: 1rem; }

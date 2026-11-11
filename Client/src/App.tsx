@@ -5,6 +5,7 @@ import CandidateProfilePage from './pages/CandidateProfilePage'
 import LoginPage from './pages/LoginPage'
 import ResumeUploadPage from './pages/ResumeUploadPage'
 import { verifyBackendSession } from './services/api'
+import SharedProfilePage from './pages/SharedProfilePage'
 
 type Page = 'upload' | 'profile'
 
@@ -118,4 +119,11 @@ function App() {
   )
 }
 
-export default App
+function AppRouter() {
+  const path = window.location.pathname
+  if (path === '/shared' || path.startsWith('/shared/')) {
+    return <SharedProfilePage token={path.slice('/shared/'.length)} />
+  }
+  return <App />
+}
+export default AppRouter

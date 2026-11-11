@@ -1,6 +1,6 @@
 // Explicitly invoked integration check; uses live Supabase and paid AI requests.
 // Only synthetic data is submitted. The temporary user and files are cleaned up.
-require('dotenv').config({ quiet: true });
+require('dotenv').config({ path: require('node:path').resolve(__dirname, '../.env'), quiet: true });
 const assert = require('node:assert/strict');
 const { randomUUID } = require('node:crypto');
 const { createClient } = require('@supabase/supabase-js');
@@ -36,6 +36,12 @@ async function main() {
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY,
     { auth: { persistSession: false, autoRefreshToken: false } });
   const app = createApp({ supabaseClient: supabase });
+  const verifySharing = process.argv.includes('--sharing');
+  if (verifySharing) {
+    assert.ok(process.env.FRONTEND_ORIGIN, 'FRONTEND_ORIGIN must be configured for sharing verification');
+    const preflight = await supabase.from('candidate_profile_shares').select('candidate_profile_id').limit(0);
+    assert.ifError(preflight.error);
+  }
   // Keep password sessions off the service-role client used by backend services.
   const authClient = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY,
     { auth: { persistSession: false, autoRefreshToken: false } });
@@ -52,6 +58,11 @@ async function main() {
     const get = (path) => request(app).get(path).auth(token, { type: 'bearer' });
     const post = (path, body) => request(app).post(path).auth(token, { type: 'bearer' }).send(body);
     await get('/api/auth/me').expect(200);
+    if (verifySharing) {
+      await post('/api/profile/sharing/enable', {}).expect(409);
+      const disabled = await get('/api/profile/sharing').expect(200);
+      assert.equal(disabled.body.sharing.enabled, false);
+    }
     console.log('PASS real authentication and profile creation');
     const upload = await request(app).post('/api/resumes').auth(token, { type: 'bearer' })
       .attach('resume', syntheticPdf(), { filename: 'synthetic-resume.pdf', contentType: 'application/pdf' }).expect(201);
@@ -86,6 +97,20 @@ async function main() {
     const saved = await get('/api/profile').expect(200);
     assert.equal(saved.body.profile.headline, content.headline);
     console.log('PASS polishing, manual editing, stale-write rejection, atomic final save and retry');
+    let publicPath;
+    if (verifySharing) {
+      const enables = await Promise.all(Array.from({ length: 3 }, () => post('/api/profile/sharing/enable', {}).expect(200)));
+      const url = enables[0].body.sharing.url;
+      for (const result of enables) assert.equal(result.body.sharing.url, url);
+      const status = await get('/api/profile/sharing').expect(200);
+      assert.equal(status.body.sharing.url, url);
+      publicPath = `/api/shared/profiles/${new URL(url).pathname.split('/').pop()}`;
+      const visitor = await request(app).get(publicPath).expect(200);
+      assert.equal(visitor.body.profile.headline, content.headline);
+      assert.equal(visitor.body.profile.rawMetadata, undefined);
+      assert.equal(visitor.headers['cache-control'], 'no-store');
+      console.log('PASS concurrent sharing enables, stable owner URL and anonymous saved-profile projection');
+    }
     await action('reopen');
     await action('edit', { content: { ...draft.content, headline: 'Private unsaved change' } });
     const stillSaved = await get('/api/profile').expect(200);
@@ -96,6 +121,22 @@ async function main() {
     const resumed = await get('/api/profile/draft').expect(200);
     assert.equal(resumed.body.draft.content.headline, 'Private unsaved change');
     console.log('PASS later edits preserve saved content and survive a new login');
+    if (verifySharing) {
+      const unchanged = await request(app).get(publicPath).expect(200);
+      assert.equal(unchanged.body.profile.headline, content.headline);
+      await action('save', { approved: true });
+      const updated = await request(app).get(publicPath).expect(200);
+      assert.equal(updated.body.profile.headline, 'Private unsaved change');
+      await post('/api/profile/sharing/disable', {}).expect(200);
+      await post('/api/profile/sharing/disable', {}).expect(200);
+      await request(app).get(publicPath).expect(404);
+      const enabled = await post('/api/profile/sharing/enable', {}).expect(200);
+      const newPath = `/api/shared/profiles/${new URL(enabled.body.sharing.url).pathname.split('/').pop()}`;
+      assert.notEqual(newPath, publicPath);
+      await request(app).get(publicPath).expect(404);
+      await request(app).get(newPath).expect(200);
+      console.log('PASS private edits stay private, final saves update visitor content, revocation and token rotation');
+    }
   } finally {
     if (userId) {
       const files = await supabase.storage.from('resumes').list(userId);

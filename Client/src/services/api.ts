@@ -29,6 +29,25 @@ interface UploadResumeResponse {
 
 const apiUrl = import.meta.env.VITE_API_URL?.replace(/\/$/, '')
 
+export interface SharingStatus { enabled: boolean; url: string | null }
+export async function manageSharing(accessToken: string, action?: 'enable' | 'disable'): Promise<SharingStatus> {
+  if (!apiUrl) throw new Error('The frontend API URL is not configured.')
+  const response = await fetch(`${apiUrl}/api/profile/sharing${action ? `/${action}` : ''}`, {
+    method: action ? 'POST' : 'GET', headers: { Authorization: `Bearer ${accessToken}` }, cache: 'no-store',
+  })
+  const body = await response.json()
+  if (!response.ok) throw new Error(body.error || 'Unable to update sharing.')
+  return body.sharing
+}
+export async function getSharedProfile(token: string, signal: AbortSignal): Promise<Omit<CandidateProfile, 'rawMetadata'>> {
+  if (!apiUrl) throw new Error('The frontend API URL is not configured.')
+  const response = await fetch(`${apiUrl}/api/shared/profiles/${encodeURIComponent(token)}`, { signal, cache: 'no-store', referrerPolicy: 'no-referrer' })
+  if (response.status === 404) throw new Error('Shared profile unavailable')
+  if (response.status === 429) throw new Error(`Too many requests. Retry after ${response.headers.get('Retry-After') || '60'} seconds.`)
+  if (!response.ok) throw new Error('Unable to load shared profile. Please try again.')
+  return (await response.json()).profile
+}
+
 export interface FollowupQuestion {
   id: string
   section: string

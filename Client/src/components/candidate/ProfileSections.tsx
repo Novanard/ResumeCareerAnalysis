@@ -13,7 +13,7 @@ function ProfileLink({ url, children }: { url: unknown; children: string }) {
   if (!/^https?:\/\//i.test(value)) return value ? <span>{value}</span> : null
   return <a href={value} target="_blank" rel="noreferrer">{children}</a>
 }
-export default function ProfileSections({ profile }: { profile: CandidateProfile }) {
+export default function ProfileSections({ profile }: { profile: Omit<CandidateProfile, 'rawMetadata'> }) {
   return <div className="profile-display-grid">
     <div className="profile-content">
       {profile.skills.length > 0 && <section className="profile-section"><h2>Skills</h2>

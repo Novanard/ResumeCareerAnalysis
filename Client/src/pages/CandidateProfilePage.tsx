@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import ProfileSections from '../components/candidate/ProfileSections'
 import ProfileReview from '../components/candidate/ProfileReview'
 import ProfileFollowupQuestions from '../components/candidate/ProfileFollowupQuestions'
+import ProfileSharing from '../components/candidate/ProfileSharing'
 import { getCandidateProfileDraft, type ProfileDraft } from '../services/api'
 import '../styles/candidate-profile.css'
 
@@ -56,6 +57,7 @@ function CandidateProfilePage({ accessToken, onBackToUpload, onSignOut }: Candid
       </header>
 
       <main className="profile-page">
+        <ProfileSharing accessToken={accessToken} revision={draft?.revision || 0} canEnable={draft?.state === 'saved' || (draft?.base_profile_revision || 0) > 0} />
         <p className="eyebrow">{draft?.state === 'saved' ? 'Saved candidate profile' : 'Private profile draft'}</p>
         <p>{draft?.state === 'saved' ? 'Your approved profile is saved.' : 'Refine your profile, review the result, and approve the final content.'}</p>
         <section className="profile-intro" aria-labelledby="candidate-name">
