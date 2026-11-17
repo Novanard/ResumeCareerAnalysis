@@ -25,6 +25,8 @@ A recruiter/company can access the shared candidate profile and ask natural-lang
 - View candidate information
 - Ask questions about the candidate
 - Receive answers based only on the candidate's stored profile/resume information
+- Explore planned candidate graphs and analytics described in spec 07;
+  company role-specific viewing options are deferred.
 
 ## 3. Core MVP Flow
 1. Candidate creates/logs into an account.
@@ -94,6 +96,21 @@ Examples may include:
 - Private resume text, refinement conversations, and superseded facts must not
   be used to reintroduce information the candidate removed or corrected.
 - The system should avoid inventing information not present in the candidate data.
+### Dashboard Graphs and Analytics (Planned)
+- The overall product includes career timelines, skill recency heatmaps,
+  skill depth/experience scatter plots, project technology sunbursts, impact
+  waterfalls, job-rubric radar charts, eligibility checklists, evidence trace
+  graphs, collaboration networks, and pipeline funnels/comparison tables.
+- Summary indicators cover supported counts and transparently defined
+  completeness/fit measures, never fabricated sample scores.
+- See [07 - Dashboard Graphs and Analytics](./07-DashboardAnalytics.md) for
+  data prerequisites, interactions, sharing rules, and acceptance criteria.
+- The reference dashboard is inspiration, not a layout to copy exactly.
+  Company viewer roles, tabs, and role-dependent views are deferred.
+- Initial charts can use existing saved facts. Richer analytics, rubric
+  assessment, and company pipelines require later contracts and workflows;
+  they do not change the frozen v1 profile or the current MVP completion gate.
+
 ## 5. Out of Scope for MVP
 The MVP will NOT include:
 - Job listings
@@ -207,6 +224,7 @@ The MVP is considered functional when:
 | [04 - Profile Review and Saving](./04-ProfileReviewAndSaving.md) | Review, confirmation, manual editing, persistence, and revision safety. |
 | [05 - Profile Sharing](./05-ProfileSharing.md) | Opt-in/revocable links, read-only public projection, sharing API/UI, and access checks. |
 | [06 - Recruiter Q&A](./06-RecruiterQA.md) | Proposed anonymous questions, saved-profile grounding, transient transcripts, access checks, and generation limits. |
+| [07 - Dashboard Graphs and Analytics](./07-DashboardAnalytics.md) | Planned ten visualization types, summary indicators, data prerequisites, evidence drill-down, and staged delivery; company role-specific views deferred. |
 
 These documents describe target behavior, not a claim that every feature is
 implemented. The current baseline includes login, upload, parsing, and viewing
