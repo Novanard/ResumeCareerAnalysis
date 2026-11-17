@@ -86,6 +86,8 @@ Examples may include:
 
 ### Profile Sharing
 - Candidate can generate/use a shareable profile URL.
+- Shared-page navigation returns visitors to their own authenticated profile
+  workspace or resume upload page, as defined in spec 05.
 - Recruiter does not need access to candidate editing functionality.
 - Sharing is opt-in and revocable. Only the saved profile is exposed; drafts,
   follow-up answers, original files, and extracted text remain private.

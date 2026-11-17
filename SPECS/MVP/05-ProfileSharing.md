@@ -42,7 +42,15 @@ eligible until explicitly approved and saved.
   links, or when there is no valid approved profile behind the link.
 - Show a retryable error for service outages rather than describing a temporary
   failure as a revoked link.
-- Provide no editing, approval, draft, resume-download, or candidate account controls.
+- Provide no controls that edit or approve the displayed candidate, access their
+  private drafts, or download their resume.
+- The header includes **My profile** linking to `/?page=profile`, **Upload
+  resume** linking to `/`, and a brand link to `/`. These leave the shared view
+  for the visitor's own workspace through the normal authentication gate;
+  signed-out visitors must log in. The profile destination opens the visitor's
+  own draft/saved profile, never the profile identified by the share token.
+  If no private draft exists, the profile page offers a return to upload.
+  Navigation remains available while loading or when a share is unavailable.
 - Refresh loads the latest saved version. Live push updates are outside scope.
 - Direct navigation and browser refresh must work on the deployed frontend;
   hosting must serve the application entry point for this route.

@@ -16,7 +16,9 @@ interface BackendVerification {
 }
 
 function App() {
-  const [page, setPage] = useState<Page>('upload')
+  const [page, setPage] = useState<Page>(() =>
+    new URLSearchParams(window.location.search).get('page') === 'profile' ? 'profile' : 'upload',
+  )
   const [session, setSession] = useState<Session | null | undefined>(
     supabase ? undefined : null,
   )

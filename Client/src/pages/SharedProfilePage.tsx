@@ -19,7 +19,13 @@ export default function SharedProfilePage({ token }: { token: string }) {
     return () => controller.abort()
   }, [token, attempt])
   return <div className="app-shell shared-shell">
-    <header className="site-header"><span className="brand">Career Profile</span></header>
+    <header className="site-header shared-header">
+      <a className="brand" href="/">Career Profile</a>
+      <nav className="header-actions" aria-label="Your workspace">
+        <a className="header-link" href="/?page=profile">My profile</a>
+        <a className="header-link" href="/">Upload resume</a>
+      </nav>
+    </header>
     <main className="profile-page">
       {!profile ? <section role={error ? 'alert' : 'status'}>
         <h1>{!/^[A-Za-z0-9_-]{43}$/.test(token) ? 'Shared profile unavailable' : error || 'Loading shared profile...'}</h1>
