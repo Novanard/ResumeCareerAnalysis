@@ -26,9 +26,9 @@ function EditValue({ name, value, onChange }: { name: string; value: Value; onCh
     {value.map((item, index) => <div className="profile-editor-item" key={index}>
       <EditValue name={name === 'description' || name === 'technologies' ? 'Text' : `Entry ${index + 1}`} value={item}
         onChange={next => onChange(value.map((v, i) => i === index ? (typeof item === 'string' ? next ?? '' : next) : v))} />
-      <button type="button" onClick={() => onChange(value.filter((_, i) => i !== index))}>Remove entry {index + 1}</button>
+      <button className="review-button review-button-danger" type="button" onClick={() => onChange(value.filter((_, i) => i !== index))}>Remove entry {index + 1}</button>
     </div>)}
-    <button type="button" onClick={() => onChange([...value, structuredClone(templates[name] ?? '')])}>Add {label(name)}</button>
+    <button className="review-button" type="button" onClick={() => onChange([...value, structuredClone(templates[name] ?? '')])}>Add {label(name)}</button>
   </fieldset>
   if (value !== null && typeof value === 'object') return <fieldset className="profile-editor-group"><legend>{label(name)}</legend>
     {Object.entries(value).map(([key, item]) => <EditValue key={key} name={key} value={item}
@@ -86,12 +86,16 @@ export default function ProfileReview({ draft, accessToken, onUpdate, onDirty }:
           <EditValue name={key} value={value as Value} onChange={next => setContent({ ...content, [key]: next })} />
         </details>)}
         {dirty && <p role="status">You have unsaved edits. Save draft edits before approving the final profile.</p>}
-        <button type="button" disabled={!dirty} onClick={() => act('edit', { content })}>Save draft edits</button>
-        <button type="button" disabled={dirty} onClick={() => act('polish')}>Polish again with AI</button>
-        {draft.proposal && <button type="button" disabled={dirty} onClick={() => act('reject')}>Reject AI changes and restore prior draft</button>}
-        <button type="button" disabled={dirty} onClick={() => act('finish', { finished: false })}>Return to questions</button>
-        <p>By selecting Approve and save final profile, you confirm the current content. This does not enable sharing.</p>
-        <button className="primary-button" type="button" disabled={dirty} onClick={() => act('save', { approved: true })}>Approve and save final profile</button>
+        <div className="review-actions" aria-label="Draft actions">
+          <button className="review-button" type="button" disabled={!dirty} onClick={() => act('edit', { content })}>Save draft edits</button>
+          <button className="review-button" type="button" disabled={dirty} onClick={() => act('polish')}>Polish again with AI</button>
+          <button className="review-button" type="button" disabled={dirty} onClick={() => act('finish', { finished: false })}>Return to questions</button>
+          {draft.proposal && <button className="review-button review-button-danger" type="button" disabled={dirty} onClick={() => act('reject')}>Reject AI changes and restore prior draft</button>}
+        </div>
+        <div className="review-approval">
+          <p>By selecting Approve and save final profile, you confirm the current content. This does not enable sharing.</p>
+          <button className="primary-button review-button review-button-primary" type="button" disabled={dirty} onClick={() => act('save', { approved: true })}>Approve and save final profile</button>
+        </div>
       </fieldset>
     </>}
   </section>

@@ -29,6 +29,10 @@ profile/analytics review UI is not implemented by the storage milestone.
   action must clearly approve and save the current edited version; it must not
   silently rely on approval of an older proposal.
 - Skipping AI refinement leads to the same review and approval requirements.
+- Review controls use consistent padding, rounded borders, visible keyboard
+  focus, and disabled states. Group draft actions separately from final approval;
+  approval is the primary filled action, while removal/rejection uses distinct
+  destructive styling. Action groups wrap or stack on small screens.
 
 ## 3. Workflow and Storage
 
