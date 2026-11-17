@@ -12,8 +12,10 @@ Polishing improves profile content. Revised resume file generation, scoring,
 career recommendations, and job-specific tailoring are outside this MVP.
 
 The separate analytics contract in [08](./08-AnalyticsDataContract.md) does not
-change this stage's v1 output. Analytics extraction and follow-up collection
-are not yet implemented and require a specified extension of this flow first.
+change this stage's v1 output. After saving the main profile, analytics are
+automatically extracted from that saved profile under spec 08. There is no
+additional analytics editing or approval step. Private refinement history is
+not reused as a hidden source; corrections go through the main profile.
 
 ## 2. Candidate Flow
 

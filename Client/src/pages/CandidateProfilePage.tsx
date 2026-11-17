@@ -3,6 +3,7 @@ import ProfileSections from '../components/candidate/ProfileSections'
 import ProfileReview from '../components/candidate/ProfileReview'
 import ProfileFollowupQuestions from '../components/candidate/ProfileFollowupQuestions'
 import ProfileSharing from '../components/candidate/ProfileSharing'
+import OwnProfileAnalytics from '../components/candidate/OwnProfileAnalytics'
 import { getCandidateProfileDraft, type ProfileDraft } from '../services/api'
 import '../styles/candidate-profile.css'
 
@@ -76,6 +77,7 @@ function CandidateProfilePage({ accessToken, onBackToUpload, onSignOut }: Candid
 
           {draft && <ProfileFollowupQuestions key={draft.id} draft={draft} accessToken={accessToken} onUpdate={setDraft} onDirty={setDirty} />}
         </div>}
+        {draft?.state === 'saved' && <OwnProfileAnalytics key={draft.revision} accessToken={accessToken} profile={profile} />}
       </main>
     </div>
   )

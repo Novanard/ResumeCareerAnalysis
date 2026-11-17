@@ -32,6 +32,7 @@ function createApp({
   resumeParsingService,
   profileRefinementService,
   profileSharingService,
+  profileAnalyticsService,
 } = {}) {
   const supabase = supabaseClient || require("./supabase");
   const resumes = resumeService || createResumeService(supabase);
@@ -48,14 +49,15 @@ function createApp({
     parser,
   });
   const authenticateUser = createAuthenticateUser(supabase);
+  const analytics = profileAnalyticsService || require('./services/profileAnalyticsService').createProfileAnalyticsService(supabase, aiClient);
   const app = express();
 
   app.use(cors());
   require('./routes/profileSharing').registerProfileSharing(app, {
-    supabase, authenticateUser, service: profileSharingService, modelClient: aiClient,
+    supabase, authenticateUser, service: profileSharingService, modelClient: aiClient, analyticsService: analytics,
   });
   app.use(express.json());
-  require('./routes/profileAnalytics').registerProfileAnalytics(app, { supabase, authenticateUser });
+  require('./routes/profileAnalytics').registerProfileAnalytics(app, { supabase, authenticateUser, service: analytics });
 
   app.get("/api/health", (_req, res) => {
     res.json({ status: "ok" });
@@ -100,6 +102,11 @@ function createApp({
           content: req.body?.content, approved: req.body?.approved,
           userId: req.user.id, draftId: req.params.draftId, questionId: req.params.questionId,
         });
+        if (method === 'save') {
+          // Saving the main profile is the sole approval step. Cache extraction
+          // runs independently so a provider failure cannot undo a successful save.
+          void analytics.read(req.user.id).catch(() => {});
+        }
         return res.json({ draft });
       } catch (error) {
         return res.status(error instanceof CandidateProfileServiceError ? error.statusCode : 500)

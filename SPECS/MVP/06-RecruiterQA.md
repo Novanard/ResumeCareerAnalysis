@@ -37,7 +37,8 @@ part of this interface change.
 
 Suggested questions can include “What technologies has this candidate used?”
 and “What work experience is listed?” Avoid suggestions that imply unknown facts.
-No requests or AI charges occur merely from viewing the page or typing.
+No Q&A requests or Q&A AI charges occur merely from viewing the page or typing.
+Automatic analytics extraction on a cache miss is separate and governed by spec 08.
 
 ## 3. Answer Rules
 

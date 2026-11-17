@@ -8,7 +8,7 @@ const number = { type: ['number', 'null'] };
 const ids = { type: 'array', maxItems: 200, uniqueItems: true, items: id };
 const object = properties => ({ type: 'object', additionalProperties: false, required: Object.keys(properties), properties });
 const collection = properties => ({ type: 'array', maxItems: 200, items: object(properties) });
-const source = { enum: ['resume', 'candidate_answer', 'manual'] };
+const source = { enum: ['profile', 'resume', 'candidate_answer', 'manual'] };
 const profileAnalyticsSchema = object({
   schemaVersion: { const: 1 },
   projects: collection({ id, profileProjectIndex: index, startDate: date, endDate: date, current: { type: ['boolean', 'null'] }, source }),

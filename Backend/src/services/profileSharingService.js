@@ -3,6 +3,17 @@ const { CandidateProfileServiceError: ServiceError } = require('./candidateProfi
 const { fromCandidateProfileRow } = require('../mappers/candidateProfileMapper');
 const { candidateProfileSchema } = require('../schemas/candidateProfileSchema');
 const { validateCandidateProfile } = require('../validation/candidateProfileValidator');
+const { validateProfileAnalytics } = require('../validation/profileAnalyticsValidator');
+const { profileAnalyticsSchema } = require('../schemas/profileAnalyticsSchema');
+const { createProfileAnalyticsService } = require('./profileAnalyticsService');
+
+function publicAnalytics(content) {
+  const projected = project(content, profileAnalyticsSchema);
+  for (const key of Object.keys(projected)) if (Array.isArray(projected[key])) {
+    projected[key] = projected[key].map(({ source: _source, ...item }) => item);
+  }
+  return projected;
+}
 
 function project(value, schema) {
   if (value === null) return null;
@@ -19,7 +30,8 @@ function publicProfile(row) {
   }
   return profile;
 }
-function createProfileSharingService(supabase, environment = process.env) {
+function createProfileSharingService(supabase, environment = process.env, analyticsService) {
+  const derived = analyticsService || createProfileAnalyticsService(supabase);
   async function readSnapshot(token) {
     if (!/^[A-Za-z0-9_-]{43}$/.test(token)) throw new ServiceError('Shared profile unavailable', 404);
     const { data, error } = await supabase.from('candidate_profile_shares')
@@ -67,7 +79,22 @@ function createProfileSharingService(supabase, environment = process.env) {
       return status(data?.[0]);
     },
     readSnapshot,
+    async readAnalytics(token) {
+      const before = await readSnapshot(token);
+      const { data, error } = await supabase.from('candidate_profile_shares')
+        .select('candidate_profiles!inner(*)')
+        .eq('token', token).eq('enabled', true).maybeSingle();
+      checkSetup(error);
+      if (error) throw new ServiceError('Unable to load shared analytics');
+      const profile = data?.candidate_profiles;
+      if (!profile?.approved_at) throw new ServiceError('Shared profile unavailable', 404);
+      const analytics = await derived.forProfile(profile);
+      const after = await readSnapshot(token);
+      if (before.profileRevision !== after.profileRevision || profile.revision !== after.profileRevision) throw new ServiceError('Profile changed. Refresh to view current analytics.', 409);
+      if (!validateProfileAnalytics(analytics.content, after.profile).valid) throw new ServiceError('Unable to load shared analytics');
+      return { profileRevision: after.profileRevision, analytics: { content: publicAnalytics(analytics.content), generatedAt: analytics.generatedAt, method: analytics.method, extractionVersion: analytics.extractionVersion } };
+    },
     async read(token) { return (await readSnapshot(token)).profile; },
   };
 }
-module.exports = { createProfileSharingService, publicProfile };
+module.exports = { createProfileSharingService, publicProfile, publicAnalytics };

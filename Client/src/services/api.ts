@@ -1,4 +1,22 @@
 import type { CandidateProfile } from '../types/candidate'
+import type { AnalyticsSnapshot, DerivedAnalytics } from '../types/analytics'
+
+export async function getProfileAnalytics(accessToken: string, signal?: AbortSignal): Promise<AnalyticsSnapshot> {
+  if (!apiUrl) throw new Error('The frontend API URL is not configured.')
+  const response = await fetch(`${apiUrl}/api/profile/analytics`, {
+    signal, cache: 'no-store', headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  const body = await response.json()
+  if (!response.ok) throw new SharedProfileError(body.error || 'Unable to load analytics', response.status)
+  return body
+}
+export async function sharedAnalytics(token: string, signal: AbortSignal): Promise<{ profileRevision: number; analytics: DerivedAnalytics | null }> {
+  if (!apiUrl) throw new Error('The frontend API URL is not configured.')
+  const response = await fetch(`${apiUrl}/api/shared/profiles/${encodeURIComponent(token)}/analytics`, { signal, cache: 'no-store', referrerPolicy: 'no-referrer' })
+  const body = await response.json()
+  if (!response.ok) throw new SharedProfileError(body.error || 'Unable to load analytics', response.status)
+  return body
+}
 
 export interface AuthenticatedUser {
   id: string

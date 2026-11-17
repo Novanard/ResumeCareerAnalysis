@@ -1,29 +1,28 @@
-# 08 - Candidate Analytics Storage and Contract
+# 08 - Automatically Derived Profile Analytics
 
-## 1. Purpose and Boundary
+## 1. Source of Truth and Approval
 
-Implement the candidate-data foundation for [07](./07-DashboardAnalytics.md)
-without changing the frozen [profile v1 contract](./02-CandidateProfileContract.md).
-An optional, separately versioned analytics document stores facts that v1 cannot
-represent. Existing profiles need no backfill and remain usable without it.
+The current approved, saved profile is the sole factual source for candidate
+analytics. The candidate approves that profile once under spec 04. Analytics
+are a read-only projection: no separate candidate facts, analytics editor,
+analytics questions, private notes, draft, approval, or publishing action.
+Corrections go through editing and saving the main profile. New saved profile
+revisions automatically invalidate old analytics and trigger fresh extraction.
 
-This milestone implements schema validation, private owner APIs, draft storage,
-and explicit approval. It does not yet implement analytics extraction, follow-up
-collection, candidate editing/review UI, public analytics responses, or the eight
-remaining charts. It also does not implement company rubrics, eligibility
-assessments, pipeline records, or company viewer roles. Those need separate
-company ownership/access contracts; they never belong in candidate JSON.
+This supersedes the former analytics draft/approval design and its mutation API.
+Keep the frozen profile v1 shape unchanged. Private resumes, refinement answers,
+raw metadata, removed facts, and historical profiles are not extraction sources.
+Company requirements and pipelines are separate data, not derivable candidate facts.
 
-## 2. Exact Content Contract
+## 2. Versioned Derived Content
 
-`Backend/src/schemas/profileAnalyticsSchema.js` defines analytics schema version
-1. Every key is required, unknown scalars use `null`, missing collections use
-`[]`, and additional keys are rejected at every object level. Each collection
-has at most 200 entries. IDs are globally unique within a document and use
-1–80 ASCII letters, digits, underscores, or hyphens. Nonempty text has at most
-2,000 characters. Dates retain `YYYY` or `YYYY-MM` precision.
+`Backend/src/schemas/profileAnalyticsSchema.js` defines analytics schemaVersion 1.
+Every specified key is required; unknown scalars use null, absent collections use
+[], and extra fields are rejected. Arrays allow at most 200 entries. IDs are
+globally unique local references (1–80 letters, digits, underscores or hyphens).
+Text is nonempty, at most 2,000 characters. Dates preserve YYYY or YYYY-MM precision.
 
-| Collection | Fields on each item |
+| Collection | Fields on every item |
 | --- | --- |
 | projects | id, profileProjectIndex, startDate, endDate, current, source |
 | skillUsages | id, profileSkillIndex, projectIds, profileExperienceIndex, startDate, endDate, current, usage, intensity, depth, assessmentBasis, source |
@@ -33,122 +32,119 @@ has at most 200 entries. IDs are globally unique within a document and use
 | evidence | id, claimType, claimId, artifactId, snippet, source |
 | collaborations | id, projectId, collaborator, relationship, description, source |
 
-The document additionally requires `schemaVersion: 1`.
+- Source is assigned by the backend as `profile`. Historical source enum values
+  remain accepted by the validator for storage compatibility, but no manual or
+  historical analytics document is used as an automatic extraction cache.
+- Profile indexes are nonnegative indexes into the saved profile at exactly the
+  cache's profile_revision. Employment index may be null. A profile project has
+  at most one analytics entity. All local references must resolve.
+- Dates/current may be null; ongoing entries require a null endDate. Reject
+  definitely reversed ranges without inventing months for year-only dates.
+- Skill usage is hands_on/led/assisted/null; intensity is occasional/regular/
+  primary/null; depth is exposure/applied/independent/ownership/null. These must
+  be explicit saved facts. Non-null depth requires an explicit assessmentBasis.
+  Never infer skill periods from employment dates, depth from technologies, or
+  leadership from job titles. Unknown dates/intensity/depth remain unknown.
+- Outcomes require metric and description; baseline/result are numbers or null.
+  Any number requires a unit. Timeframe and measurementMethod are nullable.
+  Preferred direction is increase/decrease/null. Do not invent baselines from
+  a percentage-only claim or aggregate incompatible metrics.
+- Decisions have description, nullable rationale, and outcome references in the
+  same project. Artifacts have title, kind (code/design/report/other), and a
+  supplied HTTP(S) URL or null. Do not fetch or embed artifact URLs.
+- Evidence links an outcome/decision to an artifact in the same project, with a
+  verbatim supporting snippet from the profile. A link alone is not verification.
+  No verified flags or confidence scores are accepted.
+- Collaboration uses an explicit collaborator/team label and relationship
+  (team/cross_functional/mentoring/other), with nullable description. Do not infer
+  reporting lines, relationship strength, or unmentioned collaborators.
 
-- `profileProjectIndex` and `profileSkillIndex` are nonnegative indexes into
-  the associated saved profile arrays. `profileExperienceIndex` is an index or
-  null. These references are valid only at the captured profile revision.
-  Project analytics entities cannot duplicate a profile project index.
-- `source` is `resume`, `candidate_answer`, or `manual`. It records the declared
-  origin without embedding private resume text or refinement history. This is
-  provenance, not independent verification. Automatic source attribution is
-  deferred until the collection workflow is implemented.
-- `current` is boolean or null; true requires a null endDate. Missing dates are
-  allowed. Reject definitely reversed intervals, but do not invent months to
-  resolve year-only ambiguity.
-- `usage` is `hands_on`, `led`, `assisted`, or null. `intensity` is `occasional`,
-  `regular`, `primary`, or null. `depth` is `exposure`, `applied`, `independent`,
-  `ownership`, or null. Non-null depth requires assessmentBasis text. These are
-  explicitly supplied descriptive labels, not generated proficiency scores.
-  A numeric scatter scale must be specified before that chart is implemented.
-- `projectIds` and `outcomeIds` are unique ID arrays. Project references must
-  resolve in this document. Decisions may link only outcomes in their project.
-- Outcome description and metric are required text. Baseline/result are numbers
-  or null. A supplied number requires a unit. Timeframe, measurementMethod,
-  and unit otherwise allow null. Preferred direction is increase/decrease/null.
-  Missing numeric context is retained without calculating invented changes.
-- Artifacts require a title and kind (`code`, `design`, `report`, `other`).
-  URLs are HTTP(S) strings or null. Do not fetch, embed, or execute their content.
-- Evidence links an outcome or decision (`claimType`) to an artifact from the
-  same project, with a required snippet. No verified flag or confidence score
-  is accepted. Evidence is candidate-supplied support, not independently checked.
-- Collaboration requires a collaborator/team label and relationship (`team`,
-  `cross_functional`, `mentoring`, `other`); description is nullable. Strength,
-  node weighting, and reporting hierarchy are not inferred or stored here.
+## 3. Automatic Extraction and Cache
 
-Stable local entity IDs support relationships within this document. Profile
-array references deliberately avoid adding IDs to frozen profile v1. Every
-later profile revision requires analytics review and reference remapping, even
-for edits that happen to leave array order unchanged.
+After a successful final profile save, backend extraction starts automatically
+without delaying or invalidating the successful save. Owner/shared analytics
+reads also generate a missing/stale cache, covering previously saved profiles
+and recovery after an interrupted process. An exact current cache is reused.
 
-## 3. Database and Revision Safety
+Configured AI receives only the current saved profile and the extraction schema.
+All profile text is untrusted data, not executable instructions. Output must pass
+schema and relationship validation before caching. Provider timeout is 60 seconds.
+If AI is unconfigured, deterministic extraction provides explicit project/technology
+links and supplied project URLs without inventing dates, depth, outcomes, or teams.
+A baseline cache is regenerated if a model becomes available.
 
-Migration: `supabase/migrations/202611170001_profile_analytics.sql`.
+Within one backend process, concurrent reads of the same profile/revision share
+one extraction. At most four extractions run concurrently; failures have a
+60-second per-key cooldown. No automatic retries incur repeated provider calls.
+These are per-process controls; multiple backend instances need shared deduplication
+and generation budgets. Analytics may incur an automatic AI call on a cache miss
+when viewing a saved/shared profile, unlike explicitly submitted recruiter Q&A.
 
-| Table | Stored state |
-| --- | --- |
-| candidate_analytics_drafts | One private document per profile, base_profile_revision, revision, content JSONB, created_at, updated_at |
-| candidate_analytics | One approved document per profile, profile_revision, source_draft_revision, content JSONB, approved_at, updated_at |
+The existing candidate_analytics table becomes a derived cache through migration
+`202611170002_automatic_profile_analytics.sql` after the original migration 001:
 
-Both tables reference candidate_profiles with cascading deletion. RLS is enabled
-and public/anonymous/authenticated database access is revoked; only the backend
-service role may access them. Their existence never enables profile sharing.
-Database constraints check JSON object/version shape and revision bounds;
-the backend checks the full schema and relationships before storage/approval.
+- candidate_profile_id, profile_revision, content remain;
+- extraction_version, extraction_method (model/baseline), generated_at are added;
+- source_draft_revision and approved_at become nullable legacy columns and are
+  null for newly derived rows;
+- only matching profile_revision, extraction_version, and extraction_method may
+  be reused. Legacy manually approved rows have no extraction version and are ignored.
 
-Draft writes require an already approved saved profile and the current profile
-revision. Revision 0 creates a draft only if none exists. Subsequent writes
-require the exact draft revision and increment it. Existing approved content
-remains unchanged until an explicit approval request. Draft saves are not
-automatically retried; a lost acknowledgment requires reload before resubmission.
+The service-role-only store_derived_candidate_analytics RPC locks the saved
+profile, requires its approval and exact revision, then atomically stores the
+derived cache. A changed/deleted profile rejects the stale write with conflict.
+Equivalent duplicate writes return the existing cache. The cache is disposable;
+it is not an independent candidate authority.
 
-Approval requires `approved: true`, the current draft revision, and the matching
-saved profile revision. The SQL functions lock the profile before analytics
-records, using the same lock as final profile saving. Writes and approval reject
-stale races transactionally. Repeating approval of the same document/revisions
-returns the existing saved record without changing its timestamps.
+RLS/service-role isolation and cascading deletion remain. Old analytics draft
+rows are retained privately for non-destructive migration compatibility; no app
+reads or promotes them. Migration 002 revokes service-role execution of the old
+draft-write and analytics-approval functions. There is no backfill approval.
 
-An owner may replace stale draft content using the current profile revision and
-the existing draft revision after reviewing/remapping the entire document. The
-backend revalidates references. There is no automatic carry-forward of analytics
-when the saved profile changes. Stale approved data is retained for owner review;
-it must never power public charts until reviewed and reapproved.
+## 4. Read-only API and Sharing
 
-## 4. Private API
-
-All routes require the existing candidate bearer-token authentication, derive
-ownership from `req.user.id`, and use `Cache-Control: no-store`.
-
-| Method/path | Request | Response |
+| Endpoint | Access | Response |
 | --- | --- | --- |
-| GET /api/profile/analytics | No body | profileRevision, draft, saved |
-| PUT /api/profile/analytics/draft | profileRevision, revision, content | `{ draft }` |
-| POST /api/profile/analytics/approve | profileRevision, revision, approved: true | `{ saved }` |
+| GET /api/profile/analytics | Candidate authentication; own saved profile only | profileRevision, analytics |
+| GET /api/shared/profiles/:token/analytics | Active share token; current saved profile only | profileRevision, analytics |
 
-Draft views contain revision, profileRevision, stale, content. Saved views contain
-those fields plus approvedAt. Absent records return null. An absent profile is
-404; unauthenticated requests are 401; invalid input is 400; stale/unapproved
-profile conflicts are 409; database outages are generic 500. Storage IDs and
-raw database rows are not returned. Reads have no creation side effects.
+Analytics contains content, generatedAt, extractionVersion, method. The public
+projection allowlists nested schema keys and removes source annotations. It
+exposes no storage/profile/user IDs, drafts, private history, or approval metadata.
+Former PUT draft and POST generate/approve endpoints are absent (404).
 
-The existing shared profile response and Q&A factual sources remain unchanged.
-A future public analytics endpoint must check active sharing, approval, matching
-profile revision, and a dedicated nested allowlist; private source annotations
-must not become public by accident. No current public route exposes these tables.
+Owner reads verify ownership and profile revision again before returning.
+Shared reads recheck sharing and profile revision after extraction, including
+cache hits. Revocation returns neutral 404; concurrent profile changes return
+409. Invalid model output/provider errors return retryable errors, not invented
+or stale values. Missing migration returns a setup-specific 503. The UI keeps the
+basic profile readable while analytics load or fail and offers retry separately.
 
-## 5. Collection and Review Follow-up
+Both routes use no-store. Public reads inherit no-referrer/noindex and the shared
+read rate limiter. There is no public company pipeline lookup through a share
+token. Profile response and Q&A grounding remain unchanged: Q&A does not gain an
+implicit additional source from the analytics cache.
 
-Before connecting AI or candidate UI, extend specs 03/04 to define joint review
-of profile facts and analytics, source attribution, editable entity references,
-skipping unsupported metrics, and revision handling. Current parsing/refinement
-continues returning v1 only. New facts must not be inserted into additionalSections
-as a substitute for this contract. Approval of the main profile does not approve
-analytics; this milestone uses an independent explicit analytics approval.
+## 5. UI and Verification Status
 
-## 6. Verification and Status
+Saved-profile and shared-profile dashboards show read-only derived charts. The
+candidate workspace explains that changes belong in the profile editor and no
+additional approval is required. Unsupported charts identify absent profile facts;
+they do not ask candidates to author or approve analytics.
 
-Implemented locally: migration, strict schema/relationship validator, service,
-and owner-only API registration. Eighteen automated tests cover valid/invalid
-documents, dates, unknown/duplicate references, cross-project evidence, unsafe
-URLs, missing assessment basis and units, approval, stale records, RPC conflicts,
-authentication, owner identity, and privacy headers.
+Implementation includes automatic extraction/cache service, post-save background
+trigger, read-only endpoints, shared access/revision checks, candidate chart
+renderers, and owner/shared read-only UI. Specs 03/04/05/07 and the overall spec
+follow this single-approval boundary.
 
-Full backend suite: 97 tests pass. Two pre-existing prompt assertions were
-updated to match the current equivalent no-invention/no-hiring-recommendation
-wording; prompt behavior was not changed in this milestone.
+Verification: all 100 backend tests, all 15 Playwright browser tests, frontend
+production build, and lint pass. Tests cover automatic extraction, current-only
+cache reuse, invalidation, single-flight requests, failure cooldown, post-save
+trigger, absent mutation endpoints, public projections, access/revision rechecks,
+populated charts, and owner/shared read-only interfaces.
 
-The migration has not been applied to Supabase. SQL execution, approval retry
-idempotency, concurrent writes/saves, deletion cascading, actual RLS privileges,
-and transaction rollback still require database integration checks. Mock service
-tests do not establish these database guarantees. No UI or live AI collection
-is claimed by this milestone.
+The user reported applying migration 001. Migration 002 is newly prepared and
+has not been applied by the agent. Live Supabase/AI extraction, RPC execution,
+concurrent database writes, RLS privileges, cascading deletion, and transaction
+rollback remain integration checks. Automated tests use mocked providers/storage;
+they do not prove those database or factual-extraction guarantees.

@@ -24,6 +24,10 @@ The disclosure must explain:
 
 - Anyone with the link can view and forward it without logging in.
 - The link includes all saved profile sections and saved contact details.
+- Read-only analytics automatically derived from the current saved profile are
+  readable through spec 08's analytics endpoint. They use no private resumes,
+  refinement history, or extra candidate-authored analytics facts. Main profile
+  saves refresh analytics automatically; there is no separate analytics approval.
 - Later approved final saves update the profile available through this link.
 - Private draft edits remain private until approved and saved.
 - Disabling sharing prevents future access through the app; it cannot remove
@@ -72,6 +76,10 @@ identifiers. The profile object contains:
 These fields retain spec 02's types, nulls, arrays, and nested field shapes.
 The public type omits `rawMetadata`; it is a projection rather than a change
 to the stored v1 contract. Allowlist nested keys as well as top-level keys.
+
+The analytics projection is a separate read-only endpoint under spec 08, with
+the same sharing/revocation and privacy rules. It does not add fields to the
+main profile response or silently extend Q&A's factual sources.
 
 Never return database row objects directly. Exclude user/profile/resume/draft
 IDs, approval metadata, private draft revisions, storage paths, original files, extracted

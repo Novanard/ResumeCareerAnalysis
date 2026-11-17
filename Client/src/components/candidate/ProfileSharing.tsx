@@ -40,7 +40,7 @@ export default function ProfileSharing({ accessToken, revision, canEnable }: { a
         <span aria-hidden="true" />{loading ? 'Checking status' : status?.enabled ? 'Link active' : status ? 'Private' : 'Unavailable'}
       </span>
     </div>
-    <p className="sharing-description">Anyone with your link can view your saved profile, including contact details. Your private draft stays visible only to you.</p>
+    <p className="sharing-description">Anyone with your link can view your saved profile, including contact details and analytics automatically derived from it. Your private draft stays visible only to you.</p>
     {!canEnable && <p className="sharing-hint">Save your profile before enabling sharing.</p>}
     {status?.url && <div className="sharing-link-group">
       <label htmlFor="share-url">Your profile link</label>

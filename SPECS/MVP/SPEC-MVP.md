@@ -113,10 +113,13 @@ Examples may include:
 - Initial charts can use existing saved facts. Richer analytics, rubric
   assessment, and company pipelines require later contracts and workflows;
   they do not change the frozen v1 profile or the current MVP completion gate.
-- Candidate analytics storage and owner-only draft/approval APIs are implemented
-  locally under [08](./08-AnalyticsDataContract.md), with an unapplied migration.
-  Analytics collection/review UI, public projection, and remaining charts are
-  still pending. New saved profile revisions require analytics reapproval.
+- Candidate analytics are automatically extracted from the approved saved
+  profile and displayed read-only under [08](./08-AnalyticsDataContract.md).
+  There is no additional analytics editing, collection, or approval step.
+  New saved revisions regenerate analytics. Seven candidate chart types are
+  connected to derived data; three company-context renderers await authorized
+  company job/pipeline data. Migration 001 was applied per the user; the additive
+  automatic-cache migration 002 is prepared but not yet applied by the agent.
 
 ## 5. Out of Scope for MVP
 The MVP will NOT include:
@@ -231,8 +234,8 @@ The MVP is considered functional when:
 | [04 - Profile Review and Saving](./04-ProfileReviewAndSaving.md) | Review, confirmation, manual editing, persistence, and revision safety. |
 | [05 - Profile Sharing](./05-ProfileSharing.md) | Opt-in/revocable links, read-only public projection, sharing API/UI, and access checks. |
 | [06 - Recruiter Q&A](./06-RecruiterQA.md) | Proposed anonymous questions, saved-profile grounding, transient transcripts, access checks, and generation limits. |
-| [07 - Dashboard Graphs and Analytics](./07-DashboardAnalytics.md) | Planned ten visualization types, summary indicators, data prerequisites, evidence drill-down, and staged delivery; company role-specific views deferred. |
-| [08 - Analytics Data Contract](./08-AnalyticsDataContract.md) | Separate versioned candidate analytics, private drafts and approval, owner APIs, revision safety, and unapplied storage migration; company data and collection UI deferred. |
+| [07 - Dashboard Graphs and Analytics](./07-DashboardAnalytics.md) | Seven profile-derived visualizations, three read-only company-context renderers, calculations, and evidence details; company data integration and viewer roles deferred. |
+| [08 - Analytics Data Contract](./08-AnalyticsDataContract.md) | Automatic saved-profile extraction, read-only owner/shared APIs, revision-bound cache, and migration 002; no separate analytics editing/approval. |
 
 These documents describe target behavior, not a claim that every feature is
 implemented. The current baseline includes login, upload, parsing, and viewing

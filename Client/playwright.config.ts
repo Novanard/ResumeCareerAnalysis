@@ -7,7 +7,7 @@ export default defineConfig({
   webServer: {
     command: 'npm run dev -- --host 127.0.0.1 --port 5180 --strictPort',
     url: 'http://127.0.0.1:5180',
-    env: { VITE_API_URL: 'http://127.0.0.1:3001' },
+    env: { VITE_API_URL: 'http://127.0.0.1:3001', VITE_SUPABASE_URL: 'https://analytics-test.supabase.co', VITE_SUPABASE_ANON_KEY: 'test-key' },
     reuseExistingServer: false,
   },
 })

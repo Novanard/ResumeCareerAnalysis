@@ -4,7 +4,7 @@ const express = require('express');
 const request = require('supertest');
 const { emptyProfileAnalytics } = require('../src/schemas/profileAnalyticsSchema');
 const { validateProfileAnalytics } = require('../src/validation/profileAnalyticsValidator');
-const { createProfileAnalyticsService } = require('../src/services/profileAnalyticsService');
+const { createProfileAnalyticsService, baselineAnalytics } = require('../src/services/profileAnalyticsService');
 const { registerProfileAnalytics } = require('../src/routes/profileAnalytics');
 const { createAuthenticateUser } = require('../src/middleware/authenticateUser');
 const { validCandidateProfile } = require('../testSupport/validCandidateProfile');
@@ -12,108 +12,154 @@ const { toCandidateProfileRow } = require('../src/mappers/candidateProfileMapper
 
 function fixture() {
   const profile = structuredClone(validCandidateProfile);
-  profile.projects = [{ name: 'App', description: null, technologies: ['React'], url: null }];
+  profile.projects = [{ name: 'App', description: 'Latency fell from 100ms to 50ms.', technologies: ['React'], url: 'https://example.com/report' }];
   profile.skills = [{ name: 'React', category: null }];
-  const content = emptyProfileAnalytics();
-  content.projects.push({ id: 'p1', profileProjectIndex: 0, startDate: '2023', endDate: null, current: true, source: 'manual' });
-  content.skillUsages.push({ id: 'u1', profileSkillIndex: 0, projectIds: ['p1'], profileExperienceIndex: null, startDate: '2023', endDate: null, current: true, usage: 'hands_on', intensity: 'regular', depth: 'applied', assessmentBasis: 'Candidate described implementation work.', source: 'candidate_answer' });
-  content.outcomes.push({ id: 'o1', projectId: 'p1', description: 'Reduced request latency', metric: 'Latency', baseline: 100, result: 50, unit: 'ms', timeframe: '2023', measurementMethod: null, preferredDirection: 'decrease', source: 'manual' });
-  content.decisions.push({ id: 'd1', projectId: 'p1', description: 'Added a cache', rationale: null, outcomeIds: ['o1'], source: 'manual' });
-  content.artifacts.push({ id: 'a1', projectId: 'p1', title: 'Report', kind: 'report', url: 'https://example.com/report', source: 'manual' });
-  content.evidence.push({ id: 'e1', claimType: 'outcome', claimId: 'o1', artifactId: 'a1', snippet: 'Measured latency fell to 50ms.', source: 'manual' });
-  content.collaborations.push({ id: 'c1', projectId: 'p1', collaborator: 'Platform team', relationship: 'cross_functional', description: null, source: 'manual' });
-  return { profile, content };
+  const content = baselineAnalytics(profile);
+  content.outcomes = [{ id: 'o1', projectId: 'project-0', description: 'Reduced latency', metric: 'Latency', baseline: 100, result: 50, unit: 'ms', timeframe: null, measurementMethod: null, preferredDirection: 'decrease', source: 'profile' }];
+  content.evidence = [{ id: 'e1', claimType: 'outcome', claimId: 'o1', artifactId: 'artifact-0', snippet: profile.projects[0].description, source: 'profile' }];
+  return { profile, content, row: { ...toCandidateProfileRow(profile), id: 'profile', revision: 4, approved_at: 'date' } };
 }
 
-test('analytics allow an empty versioned document and complete linked candidate facts', () => {
-  const { content, profile } = fixture();
+test('analytics schema accepts empty and linked profile-derived documents', () => {
+  const { profile, content } = fixture();
   assert.equal(validateProfileAnalytics(emptyProfileAnalytics(), profile).valid, true);
   assert.equal(validateProfileAnalytics(content, profile).valid, true);
 });
-
 for (const [name, mutate] of [
-  ['undefined scoring and private fields', c => { c.fitScore = 90; }],
-  ['unsupported verification status', c => { c.evidence[0].verified = true; }],
-  ['duplicate entity identifiers', c => { c.outcomes[0].id = 'p1'; }],
-  ['dangling project references', c => { c.skillUsages[0].projectIds = ['absent']; }],
-  ['missing profile entries', c => { c.projects[0].profileProjectIndex = 99; }],
-  ['depth without assessment basis', c => { c.skillUsages[0].assessmentBasis = null; }],
+  ['extra scoring', c => { c.fitScore = 90; }],
+  ['verification claims', c => { c.evidence[0].verified = true; }],
+  ['duplicate IDs', c => { c.outcomes[0].id = 'project-0'; }],
+  ['unknown profile project', c => { c.projects[0].profileProjectIndex = 99; }],
+  ['dangling references', c => { c.evidence[0].claimId = 'absent'; }],
   ['reversed dates', c => { Object.assign(c.projects[0], { startDate: '2025', endDate: '2023', current: false }); }],
-  ['invalid month', c => { c.projects[0].startDate = '2023-13'; }],
-  ['ongoing entry with end date', c => { c.projects[0].endDate = '2024'; }],
-  ['metrics without units', c => { c.outcomes[0].unit = null; }],
-  ['unknown evidence claim', c => { c.evidence[0].claimId = 'absent'; }],
-  ['unsafe artifact URL', c => { c.artifacts[0].url = 'javascript:alert(1)'; }],
+  ['invalid months', c => { c.projects[0].startDate = '2023-13'; }],
+  ['ongoing completed range', c => { Object.assign(c.projects[0], { current: true, endDate: '2024' }); }],
+  ['measurements without units', c => { c.outcomes[0].unit = null; }],
+  ['unsafe URL', c => { c.artifacts[0].url = 'javascript:alert(1)'; }],
 ]) test(`analytics reject ${name}`, () => {
-  const { content, profile } = fixture(); mutate(content);
+  const { profile, content } = fixture(); mutate(content);
   assert.equal(validateProfileAnalytics(content, profile).valid, false);
 });
 
-test('relationships cannot silently connect different projects', () => {
-  const { content, profile } = fixture();
-  profile.projects.push({ ...profile.projects[0] });
-  content.projects.push({ ...content.projects[0], id: 'p2', profileProjectIndex: 1 });
-  content.artifacts[0].projectId = 'p2';
-  assert.equal(validateProfileAnalytics(content, profile).valid, false);
-});
-
-function database({ profileRevision = 4, draftRevision = 2, baseRevision = 4, approved = true, rpcError = null } = {}) {
-  const { profile, content } = fixture();
-  const row = { ...toCandidateProfileRow(profile), id: 'profile', revision: profileRevision, approved_at: approved ? '2026-11-17' : null };
-  const draft = { content, revision: draftRevision, base_profile_revision: baseRevision };
-  const calls = [];
-  return { calls, content, client: {
-    from(table) {
-      return { select() { return this; }, eq(key, value) { calls.push([table, key, value]); return this; }, async maybeSingle() {
-        return { data: table === 'candidate_profiles' ? row : table === 'candidate_analytics_drafts' ? draft : { content, source_draft_revision: 1, profile_revision: baseRevision, approved_at: 'date' }, error: null };
-      } };
-    },
-    async rpc(name, args) { calls.push([name, args]); return { error: rpcError, data: name === 'write_candidate_analytics_draft' ? draft : { content, source_draft_revision: draftRevision, profile_revision: profileRevision, approved_at: 'date' } }; },
-  } };
+function database({ cached = null, race = false } = {}) {
+  const { row, content } = fixture(); const calls = [];
+  const client = {
+    from(table) { return { select() { return this; }, eq(key, value) { calls.push([table, key, value]); return this; }, async maybeSingle() { return { data: table === 'candidate_profiles' ? row : cached, error: null }; } }; },
+    async rpc(name, args) { calls.push([name, args]); return { data: { content: args.p_content, generated_at: 'now' }, error: race ? { code: '40001' } : null }; },
+  };
+  return { row, content, calls, client };
 }
 
-test('service validates before writes and sends owner identity and both revisions', async () => {
-  const db = database(); const service = createProfileAnalyticsService(db.client);
-  await service.edit({ userId: 'owner', revision: 1, profileRevision: 4, content: db.content });
-  const call = db.calls.find(([name]) => name === 'write_candidate_analytics_draft');
-  assert.equal(call[1].p_user_id, 'owner'); assert.equal(call[1].p_revision, 1); assert.equal(call[1].p_profile_revision, 4);
-  db.calls.length = 0;
-  await assert.rejects(service.edit({ userId: 'owner', revision: 1, profileRevision: 4, content: { ...db.content, secret: true } }), e => e.statusCode === 400);
-  assert.ok(!db.calls.some(([name]) => name === 'write_candidate_analytics_draft'));
-});
-
-test('service blocks unapproved profiles, stale content, missing approval, and invalid revisions', async () => {
-  for (const options of [{ approved: false }, { profileRevision: 5 }, { baseRevision: 3 }]) {
-    const db = database(options); const service = createProfileAnalyticsService(db.client);
-    await assert.rejects(service.approve({ userId: 'owner', revision: 2, profileRevision: 4, approved: true }), e => e.statusCode === 409);
-    assert.ok(!db.calls.some(([name]) => name === 'approve_candidate_analytics'));
-  }
-  const service = createProfileAnalyticsService(database().client);
-  await assert.rejects(service.approve({ userId: 'owner', revision: 2, profileRevision: 4, approved: false }), e => e.statusCode === 400);
-  await assert.rejects(service.edit({ userId: 'owner', revision: null, profileRevision: 4 }), e => e.statusCode === 400);
-});
-
-test('service reports stale records to owner and maps database race rejection', async () => {
-  const service = createProfileAnalyticsService(database({ baseRevision: 3 }).client);
+test('automatic extraction reads only current saved facts and stores a read-only cache', async () => {
+  const db = database(); let sent;
+  const service = createProfileAnalyticsService(db.client, { generateCandidateProfile: async input => { sent = input; return db.content; } });
   const result = await service.read('owner');
-  assert.equal(result.draft.stale, true); assert.equal(result.saved.stale, true);
-  assert.equal(result.draft.candidate_profile_id, undefined);
-  const db = database({ rpcError: { code: '40001' } });
-  await assert.rejects(createProfileAnalyticsService(db.client).edit({ userId: 'owner', revision: 2, profileRevision: 4, content: db.content }), e => e.statusCode === 409);
+  assert.equal(result.profileRevision, 4);
+  assert.equal(JSON.parse(sent.input).profile.rawMetadata, undefined);
+  assert.equal(JSON.parse(sent.input).candidateNotes, undefined);
+  assert.match(sent.instructions, /ONLY from the current approved saved profile/);
+  const write = db.calls.find(([name]) => name === 'store_derived_candidate_analytics');
+  assert.equal(write[1].p_profile_revision, 4);
+  assert.equal(write[1].p_extraction_method, 'model');
+  assert.ok(db.calls.every(([name]) => !['candidate_analytics_drafts', 'approve_candidate_analytics', 'write_candidate_analytics_draft'].includes(name)));
+  assert.equal(service.approve, undefined); assert.equal(service.edit, undefined);
 });
 
-test('private analytics routes require login and derive owner from authentication', async () => {
-  const calls = [];
-  const app = express(); app.use(express.json());
+test('matching derived cache is reused without AI; old manually approved content is not reused', async () => {
+  const { content } = fixture(); let calls = 0;
+  for (const automatic of [true, false]) {
+    const db = database({ cached: { content, profile_revision: 4, approved_at: 'date', extraction_version: automatic ? 1 : null, extraction_method: 'model', generated_at: 'old' } });
+    await createProfileAnalyticsService(db.client, { generateCandidateProfile: async () => { calls++; return content; } }).read('owner');
+    assert.equal(db.calls.some(([name]) => name === 'store_derived_candidate_analytics'), !automatic);
+  }
+  assert.equal(calls, 1);
+});
+
+test('saved profile revisions invalidate derived cache without any second approval', async () => {
+  const { content } = fixture();
+  const db = database({ cached: { content, profile_revision: 3, extraction_version: 1, extraction_method: 'model' } });
+  await createProfileAnalyticsService(db.client, { generateCandidateProfile: async () => content }).read('owner');
+  assert.ok(db.calls.some(([name]) => name === 'store_derived_candidate_analytics'));
+});
+
+test('baseline extraction retains unknown dates/depth and links only explicit technologies', async () => {
+  const db = database();
+  const result = await createProfileAnalyticsService(db.client).read('owner');
+  const usage = result.analytics.content.skillUsages[0];
+  assert.equal(usage.startDate, null); assert.equal(usage.depth, null); assert.equal(usage.usage, null);
+  assert.equal(result.analytics.content.outcomes.length, 0);
+  assert.equal(result.analytics.method, 'baseline');
+});
+
+test('invalid output, provider failure and racing profile saves never store stale analytics', async () => {
+  for (const scenario of ['invalid', 'failure', 'race']) {
+    const db = database({ race: scenario === 'race' });
+    const service = createProfileAnalyticsService(db.client, { generateCandidateProfile: async () => {
+      if (scenario === 'failure') throw new Error('provider secret');
+      return scenario === 'invalid' ? { schemaVersion: 1 } : db.content;
+    } });
+    await assert.rejects(service.read('owner'), e => e.statusCode === (scenario === 'race' ? 409 : 502));
+    if (scenario !== 'race') assert.ok(!db.calls.some(([name]) => name === 'store_derived_candidate_analytics'));
+  }
+});
+
+test('parallel reads share one extraction and failed attempts have a retry cooldown', async () => {
+  const db = database(); let release; let started;
+  const pending = new Promise(resolve => { release = resolve; });
+  const ready = new Promise(resolve => { started = resolve; });
+  let calls = 0;
+  const service = createProfileAnalyticsService(db.client, { generateCandidateProfile: async () => { calls++; started(); await pending; return db.content; } });
+  const first = service.read('owner'); await ready; const second = service.read('owner'); release(); await Promise.all([first, second]);
+  assert.equal(calls, 1);
+  const broken = createProfileAnalyticsService(db.client, { generateCandidateProfile: async () => { throw new Error(); } });
+  await assert.rejects(broken.read('owner'), e => e.statusCode === 502);
+  await assert.rejects(broken.read('owner'), e => e.statusCode === 503);
+});
+
+test('owner analytics are authenticated and read-only; old mutation endpoints are absent', async () => {
+  const calls = []; const app = express(); app.use(express.json());
   const supabase = { auth: { getUser: async token => ({ data: { user: token === 'valid' ? { id: 'owner' } : null } }) } };
-  const service = { read: async id => { calls.push(id); return { draft: null, saved: null }; },
-    edit: async args => { calls.push(args); return { revision: 1 }; }, approve: async args => { calls.push(args); return { revision: 1 }; } };
-  registerProfileAnalytics(app, { supabase, authenticateUser: createAuthenticateUser(supabase), service });
+  registerProfileAnalytics(app, { supabase, authenticateUser: createAuthenticateUser(supabase), service: { read: async id => { calls.push(id); return { profileRevision: 4, analytics: {} }; } } });
   await request(app).get('/api/profile/analytics').expect(401);
-  await request(app).put('/api/profile/analytics/draft').send({}).expect(401);
-  await request(app).post('/api/profile/analytics/approve').send({}).expect(401);
-  const response = await request(app).get('/api/profile/analytics').auth('valid', { type: 'bearer' }).expect(200);
-  assert.equal(response.headers['cache-control'], 'no-store');
-  await request(app).put('/api/profile/analytics/draft').auth('valid', { type: 'bearer' }).send({ userId: 'victim', revision: 0, profileRevision: 4, content: emptyProfileAnalytics() }).expect(200);
-  assert.equal(calls[0], 'owner'); assert.equal(calls[1].userId, 'owner');
+  const result = await request(app).get('/api/profile/analytics').auth('valid', { type: 'bearer' }).expect(200);
+  assert.equal(result.headers['cache-control'], 'no-store'); assert.deepEqual(calls, ['owner']);
+  await request(app).put('/api/profile/analytics/draft').auth('valid', { type: 'bearer' }).send({}).expect(404);
+  for (const action of ['approve', 'generate']) await request(app).post(`/api/profile/analytics/${action}`).auth('valid', { type: 'bearer' }).send({}).expect(404);
+});
+
+test('final main-profile save triggers extraction without requiring analytics approval or failing the save', async () => {
+  const { createApp } = require('../src/app'); const calls = [];
+  const supabase = { auth: { getUser: async () => ({ data: { user: { id: 'owner' } } }) } };
+  const app = createApp({ supabaseClient: supabase, modelClient: {},
+    profileRefinementService: { save: async () => ({ id: 'draft', state: 'saved', revision: 2 }) },
+    profileAnalyticsService: { read: async id => { calls.push(id); throw new Error('temporary extraction failure'); } },
+  });
+  await request(app).post('/api/profile/drafts/draft/save').auth('valid', { type: 'bearer' }).send({ revision: 1, approved: true }).expect(200);
+  assert.deepEqual(calls, ['owner']);
+});
+
+test('public projection strips provenance and undefined private fields', () => {
+  const { publicAnalytics } = require('../src/services/profileSharingService');
+  const { content } = fixture(); content.projects[0].privateNotes = 'secret'; content.internal = 'secret';
+  const projected = publicAnalytics(content);
+  assert.equal(projected.projects[0].source, undefined); assert.equal(projected.projects[0].privateNotes, undefined); assert.equal(projected.internal, undefined);
+});
+
+test('shared derived analytics recheck revocation and profile revision after extraction', async () => {
+  const { createProfileSharingService } = require('../src/services/profileSharingService');
+  for (const scenario of ['current', 'revoked', 'changed']) {
+    const { row, content } = fixture(); let reads = 0;
+    const client = { from() { return { select() { return this; }, eq() { return this; }, async maybeSingle() {
+      reads++;
+      return { data: scenario === 'revoked' && reads === 3 ? null : { candidate_profiles: { ...row, revision: scenario === 'changed' && reads === 3 ? 5 : 4 } }, error: null };
+    } }; } };
+    const derived = { forProfile: async () => ({ content, generatedAt: 'date', method: 'model', extractionVersion: 1 }) };
+    const service = createProfileSharingService(client, {}, derived);
+    if (scenario !== 'current') await assert.rejects(service.readAnalytics('a'.repeat(43)), e => e.statusCode === (scenario === 'revoked' ? 404 : 409));
+    else {
+      const result = await service.readAnalytics('a'.repeat(43));
+      assert.equal(result.analytics.content.projects[0].source, undefined);
+      assert.equal(result.analytics.extractionVersion, 1);
+    }
+  }
 });

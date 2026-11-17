@@ -8,3 +8,6 @@
   migrations and pending live/database checks explicitly.
 - Preserve candidate ownership, private drafts, explicit approval, and the
   saved-public-profile boundary when extending data or analytics.
+- The candidate approves only their main profile. Candidate analytics must be
+  automatically derived from the current saved profile, read-only, and refreshed
+  when it changes. Do not introduce separate analytics editing or approval steps.

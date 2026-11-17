@@ -41,9 +41,11 @@ percentages or sample experience totals from the reference.
 - Initial dashboard work can use saved v1 facts for employment timelines,
   project/technology exploration, and supported counts. Year-only dates retain
   their uncertainty; undated items remain accessible outside dated bars.
-- The remaining visualizations are required planned capabilities with the data
-  dependencies above. They are not silently added to the current MVP release
-  gate. Their implementation requires the relevant data contracts and workflows.
+- Candidate visualizations use the automatic read-only extraction in spec 08.
+  No additional analytics facts or approvals are requested from the candidate.
+  Missing profile facts produce honest empty/partial states. Company rubric,
+  eligibility, and pipeline renderers require company context; connecting that
+  authorized data remains separate work, not an implicit MVP release gate.
 - Rubric assessment, eligibility screening, and multi-candidate pipelines extend
   beyond the current MVP. They do not introduce job listings, candidate search,
   job applications, or automatic candidate/job matching into the MVP.
@@ -60,12 +62,15 @@ stable IDs and relationships; dated skill usage; project dates; outcomes and
 measurements; decisions; artifacts and evidence; collaboration; job rubrics and
 assessments; and company pipeline stages and membership.
 
-[08 - Analytics Data Contract](./08-AnalyticsDataContract.md) now defines and
-implements the separate candidate analytics storage/API foundation. Its migration
-is not yet applied. Company rubric/pipeline contracts and collection/public UI
-integration remain future work; the unavailable charts remain unimplemented.
+[08 - Analytics Data Contract](./08-AnalyticsDataContract.md) defines automatic
+extraction from the current saved profile and a revision-bound derived cache.
+Migration 001 was applied per the user; migration 002 adds automatic-cache
+metadata and retires analytics draft/approval writes. The latter is not yet
+applied by the agent. Owner/shared UI and candidate chart integration are local.
 
-Candidate-provided additions follow review and explicit saving in specs 03/04.
+All candidate facts come through main-profile review and saving in specs 03/04.
+Analytics cannot be edited or separately approved. Correct the main profile to
+change them. Every saved revision automatically invalidates and regenerates them.
 Company rubrics and pipeline records are separate company data, not candidate
 profile edits. Future company access must be specified before exposing those
 records; deferring stakeholder views does not authorize public pipeline access.
@@ -127,18 +132,39 @@ Implemented locally on the shared profile page:
   project descriptions, and a text equivalent of technology relationships.
 - Counts of saved projects, employment entries, and named skills, plus the
   public saved-profile revision used for these views.
-- An expandable inventory of the eight remaining visualization types with
-  explicit unavailable states explaining their data prerequisites.
+- Skill recency heatmap, skill depth scatter, impact panels, evidence trace,
+  and collaboration networks driven by automatically derived profile analytics.
+  Dated projects join the employment timeline when explicitly recorded.
+- Read-only job-rubric radar, eligibility table, and pipeline-funnel renderers.
+  No company data source is connected yet: these identify absent company inputs,
+  with no editable worksheets, invented assessments, or sample candidates.
 
-Calculations use only the already-loaded public projection. No new API,
-profile fields, external chart services, company roles, or database migrations
-are introduced. Ongoing employment ends at the viewer's current calendar month.
-Summary completeness, outcomes, and fit indicators await their structured data
-and documented calculations; they are not presented as zero or sample scores.
+Read-only analytics endpoints and the cache migration are specified in spec 08.
+Candidate extraction uses only the current approved saved profile. The only
+candidate approval is the main-profile save; there is no analytics editor or
+approval stage. Extraction may run automatically on first view of an existing
+profile. Private draft work never affects shared charts.
 
-Verification: production frontend build and lint pass. All 12 Playwright tests
-pass, including three analytics tests covering uncertain/missing/reversed dates,
-keyboard drill-down, untrusted text, mobile overflow, capability descriptions,
-and empty profiles. Existing Q&A tests continue to cover profile revision
-refresh and removal of the shared content after a detected revocation.
-Live provider/database and deployed-browser checks were not run for this change.
+Heatmap displays the most recent 12 calendar quarters. Intensity values map
+explicit labels occasional/regular/primary to 1/2/3; stripes identify year-only
+date uncertainty or unspecified intensity. Blank cells mean unrecorded usage,
+not a lack of skill. Context/details retain undated and out-of-window records.
+Scatter points represent individual usage periods with month-precise dates and
+explicit depth; labels 1–4 order exposure/applied/independent/ownership. These
+are supplied facts, not inferred skill ratings. Overlapping periods are not
+summed; no aggregate career duration is presented. Unknown periods are omitted
+with an explanation. Ongoing intervals end at the current calendar month.
+
+Impact panels keep metrics separate and show absolute before/after values, units,
+timeframe, and measurement context. Delta is after minus before; relative change
+is delta / abs(before) × 100 when baseline is nonzero. Percent-valued deltas are
+percentage points. Networks expose their labels and relationships as accessible
+text/button alternatives. Equal collaboration node sizes/edge widths avoid
+implying unsupported strength. Outcome counts reflect extracted records.
+Completeness and aggregate fit remain deferred until their methods/data exist.
+
+Verification: frontend production build/lint, all 100 backend tests, and all 15
+Playwright browser tests pass. Coverage includes populated candidate charts, missing company inputs,
+read-only owner analytics, dates, keyboard details, mobile overflow, empty profiles,
+and existing Q&A behavior. Live provider/database
+and deployed-browser checks have not been run for this automatic workflow.

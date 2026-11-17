@@ -18,6 +18,7 @@
 .career-track { position: relative; height: 24px; border-radius: 5px; background: #f1f5f9; overflow: hidden; }
 .career-bar { position: absolute; height: 100%; background: #2563eb; border-radius: 4px; min-width: 2px; }
 .career-bar.is-approximate { background: repeating-linear-gradient(135deg, #2563eb, #2563eb 5px, #93b4f9 5px, #93b4f9 9px); }
+.profile-analytics button.career-bar { min-height: 0; padding: 0; border: 0; cursor: pointer; }
 .analytics-details { margin: 18px 0; color: #334155; font-size: .8rem; }
 .analytics-details summary { cursor: pointer; padding: 8px 0; }
 .analytics-table-scroll { overflow-x: auto; }
@@ -36,8 +37,30 @@
 .stack-project-details h4 { margin: 0 0 6px; font-size: .85rem; overflow-wrap: anywhere; }
 .stack-project-details p { margin-bottom: 8px; }
 .analytics-toggle { display: block; margin: 22px auto; padding: 10px 16px; border: 1px solid #cbd5e1; border-radius: 9px; color: #334155; background: #fff; cursor: pointer; font-size: .82rem; }
-.analytics-unavailable { display: inline-block; margin-bottom: 12px; padding: 4px 8px; border-radius: 6px; color: #475569; background: #f1f5f9; font-size: .7rem; }
 .profile-analytics :is(button, summary):focus-visible { outline: 3px solid #93c5fd; outline-offset: 3px; }
+.analytics-plot { display: block; width: 100%; max-height: 400px; margin: 18px auto; overflow: visible; }
+.analytics-plot text { fill: #475569; font-size: 11px; }
+.analytics-table-scroll table { border-collapse: collapse; width: 100%; text-align: left; font-size: .78rem; }
+.analytics-table-scroll caption { text-align: left; color: #64748b; padding-bottom: 12px; }
+.analytics-table-scroll :is(th, td) { border-bottom: 1px solid #e2e8f0; padding: 10px 6px; vertical-align: top; }
+.skill-heatmap th { min-width: 48px; font-size: .68rem; }
+.heat-cell { width: 100%; min-width: 32px; min-height: 32px; border: 1px solid #e2e8f0; border-radius: 5px; background: #f8fafc; color: #475569; cursor: pointer; }
+.heat-1 { background: #dbeafe; }.heat-2 { background: #93c5fd; }.heat-3 { background: #1d4ed8; color: #fff; }
+.heat-uncertain { background: repeating-linear-gradient(135deg, #dbeafe, #dbeafe 5px, #f8fafc 5px, #f8fafc 10px); color: #334155; }
+.chart-context { margin: 16px 0; padding: 14px; background: #eff6ff; border-radius: 8px; font-size: .82rem; line-height: 1.6; overflow-wrap: anywhere; }
+.chart-selection { display: flex; flex-wrap: wrap; gap: 8px; }
+.profile-analytics button:not(.analytics-toggle, .heat-cell, .career-bar, .stack-project-buttons button) { min-height: 38px; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; color: #334155; background: #fff; font: inherit; font-size: .8rem; cursor: pointer; }
+.profile-analytics button[aria-pressed=true] { border-color: #2563eb; outline: 1px solid #2563eb; }
+.profile-analytics button:disabled { opacity: .5; cursor: not-allowed; }
+.impact-outcome { margin: 18px 0; padding-top: 14px; border-top: 1px solid #e2e8f0; font-size: .8rem; }
+.impact-outcome summary { margin-bottom: 16px; cursor: pointer; }
+.impact-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) minmax(70px, auto); align-items: center; gap: 10px; margin: 12px 0; font-size: .75rem; }
+.impact-row > div { height: 18px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
+.impact-row > div > span { display: block; height: 100%; background: #2563eb; }
+.impact-row:nth-of-type(1) > div > span { background: #94a3b8; }
+.company-analytics { margin-top: 32px; padding-top: 24px; border-top: 1px solid #e2e8f0; }
+.pipeline-current { background: #eff6ff; }
+.analytics-stats { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); }
 @media (max-width: 900px) { .analytics-grid { grid-template-columns: minmax(0, 1fr); } }
 @media (min-width: 1001px) { .shared-shell:has(.qa-panel[open]) .analytics-grid { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 500px) { .analytics-card { padding: 18px; } .analytics-stats { gap: 8px; } .analytics-stats > div { padding: 14px 10px; } .analytics-stats dd { font-size: 1.5rem; } .analytics-heading { align-items: flex-start; } }

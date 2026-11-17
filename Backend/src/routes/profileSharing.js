@@ -1,8 +1,8 @@
 const { createProfileSharingService } = require('../services/profileSharingService');
 const { CandidateProfileServiceError } = require('../services/candidateProfileService');
 
-function registerProfileSharing(app, { supabase, authenticateUser, service, modelClient, environment = process.env }) {
-  const sharing = service || createProfileSharingService(supabase, environment);
+function registerProfileSharing(app, { supabase, authenticateUser, service, modelClient, analyticsService, environment = process.env }) {
+  const sharing = service || createProfileSharingService(supabase, environment, analyticsService);
   // Trust only explicitly configured proxy hops/addresses, never arbitrary forwarded headers.
   if (environment.TRUST_PROXY) app.set('trust proxy', environment.TRUST_PROXY.split(',').map(v => v.trim()));
   const limit = Number(environment.SHARED_PROFILE_RATE_LIMIT || 60);
@@ -39,6 +39,9 @@ function registerProfileSharing(app, { supabase, authenticateUser, service, mode
     clients.set(key, entry);
     if (entry.count > limit) return res.set('Retry-After', String(Math.max(1, Math.ceil((entry.until - now) / 1000)))).status(429).json({ error: 'Too many requests. Try again shortly.' });
     next();
+  });
+  app.get('/api/shared/profiles/:token/analytics', async (req, res) => {
+    try { res.json(await sharing.readAnalytics(req.params.token)); } catch (error) { failure(res, error); }
   });
   app.get(['/api/shared/profiles/:token', '/api/shared/profiles'], async (req, res) => {
     try {
