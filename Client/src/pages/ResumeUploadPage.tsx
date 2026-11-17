@@ -59,17 +59,19 @@ function ResumeUploadPage({
   }
 
   async function handleUpload() {
-    if (!selectedFile) return
+    if (!selectedFile || status.type === 'uploading') return
 
-    setStatus({ type: 'uploading', message: 'Uploading resume...' })
+    setStatus({ type: 'uploading', message: 'Uploading and processing your resume. Your draft will open when ready...' })
 
     try {
       const resume = await uploadResume(selectedFile, accessToken)
+      if (resume.processing_status === 'parsed') {
+        onViewProfile()
+        return
+      }
       setStatus({
         type: 'success',
-        message: resume.processing_status === 'parsed'
-          ? 'Resume uploaded and private profile draft generated.'
-          : `Resume uploaded and text extracted. AI parsing is ready to be connected. Resume ID: ${resume.id}`,
+        message: 'Resume uploaded, but your draft is not ready yet. Profile generation must finish before it can open.',
       })
     } catch (error) {
       setStatus({
@@ -127,7 +129,7 @@ function ResumeUploadPage({
             }
             onClick={handleUpload}
           >
-            {status.type === 'uploading' ? 'Uploading...' : 'Upload resume'}
+            {status.type === 'uploading' ? 'Processing resume...' : 'Upload resume'}
           </button>
         </section>
       </main>

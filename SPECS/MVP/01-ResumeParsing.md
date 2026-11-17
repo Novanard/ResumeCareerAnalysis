@@ -52,7 +52,9 @@ already performed validation.
 8. Extracted text is sent to the AI parsing process.
 9. AI converts the resume into structured candidate data.
 10. Valid structured data is persisted as a private parsed draft.
-11. Candidate is shown the draft and can proceed to follow-up questions and
+11. Frontend automatically opens the private draft after the upload response
+    confirms `processing_status: parsed`; no additional click is required.
+    Candidate can proceed to follow-up questions and
     polishing under [03-ProfileRefinement.md](./03-ProfileRefinement.md).
 
 Parsing writes to a separate private draft, not to the saved candidate profile.
@@ -245,6 +247,14 @@ The upload interface should provide:
 * error state
 * successful completion state
 
+While the upload/parsing request is pending, show a processing message explaining
+that the draft will open when ready. Automatically navigate only after confirmed
+parsing success. Upload failures and incomplete parsing remain on the upload
+page with an explanation; do not navigate to a previous draft as if it were the
+newly generated result. The existing **View private draft** header action remains
+available for returning to previously persisted work. Automatic opening neither
+approves nor shares the draft.
+
 The user should be able to understand whether the system is:
 
 * uploading the file
@@ -272,6 +282,8 @@ This feature is considered complete when:
 * Initial parsing does not create an approved final profile or overwrite an
   existing saved profile.
 * Refreshing or logging in again does not remove the persisted parsed draft.
+* Successful upload/parsing opens the private draft automatically; failures and
+  incomplete parsing do not trigger automatic navigation.
 * Parsing failures are shown to the candidate instead of crashing the application.
 * Another user cannot modify the candidate's uploaded resume.
 * AI API credentials are kept exclusively on the backend.

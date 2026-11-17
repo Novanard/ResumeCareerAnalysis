@@ -33,7 +33,8 @@ A recruiter/company can access the shared candidate profile and ask natural-lang
 2. Candidate uploads a resume.
 3. System extracts resume content.
 4. AI converts the resume into structured profile data.
-5. System saves the parsed result as a private draft.
+5. System saves the parsed result as a private draft and automatically opens it
+   after successful upload/parsing, without requiring a separate navigation click.
 6. AI asks relevant follow-up questions; the candidate can answer or skip them.
 7. AI proposes clearer wording and a polished profile using supported facts.
 8. Candidate reviews the proposal, requests revisions or edits it, and confirms it.
