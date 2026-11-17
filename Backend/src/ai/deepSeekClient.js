@@ -1,5 +1,6 @@
 const DEFAULT_BASE_URL = "https://api.deepseek.com";
 const DEFAULT_MODEL = "deepseek-flash";
+const { buildCandidateQuestionRequest } = require('./candidateQuestionPrompt');
 
 class DeepSeekClientError extends Error {
   constructor(message) {
@@ -15,15 +16,14 @@ function hasRealApiKey(apiKey) {
 function createDeepSeekClient({ apiKey, model = DEFAULT_MODEL, baseUrl = DEFAULT_BASE_URL, fetchImpl = fetch }) {
   if (!hasRealApiKey(apiKey)) return undefined;
 
-  return {
-    async generateCandidateProfile({ instructions, input, schema }) {
+  async function generateJson({ instructions, input, schema, signal }) {
       const response = await fetchImpl(`${baseUrl.replace(/\/$/, "")}/chat/completions`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
         },
-        signal: AbortSignal.timeout(60_000),
+        signal: signal || AbortSignal.timeout(60_000),
         body: JSON.stringify({
           model,
           messages: [
@@ -59,6 +59,11 @@ function createDeepSeekClient({ apiKey, model = DEFAULT_MODEL, baseUrl = DEFAULT
       } catch (_error) {
         throw new DeepSeekClientError("DeepSeek returned invalid JSON");
       }
+  }
+  return {
+    generateCandidateProfile: generateJson,
+    async answerCandidateQuestion({ profile, question, signal }) {
+      return generateJson({ ...buildCandidateQuestionRequest({ profile, question }), signal });
     },
   };
 }

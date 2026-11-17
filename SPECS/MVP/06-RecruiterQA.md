@@ -2,7 +2,8 @@
 
 ## 1. Purpose and Status
 
-Proposed specification; recruiter Q&A is not implemented.
+Recruiter Q&A is implemented locally. Verification results and remaining
+live-provider/deployment checks are recorded in section 10.
 
 A visitor to an active shared profile can ask natural-language questions and
 receive answers based only on the candidate's current approved, saved public
@@ -55,7 +56,7 @@ responsibilities are not specified. Never turn “contributed” into “led.”
 
 ## 4. Conversation Context and Privacy
 
-Proposed MVP choice: keep the transcript only in React memory. Refreshing,
+MVP choice: keep the transcript only in React memory. Refreshing,
 closing the page, or starting a new conversation clears it. Do not create
 Conversation/Message database records, use browser storage, or expose transcripts
 to candidates or other visitors in this milestone. The model provider receives
@@ -204,3 +205,42 @@ Recruiter authentication, persistent chat history, contextual multi-turn AI,
 candidate-visible recruiter activity, candidate notifications, web research,
 resume-file retrieval, hiring recommendations, matching, scoring, streaming
 responses, and vector databases/RAG infrastructure.
+
+## 10. Implementation and Verification Status
+
+Implemented: anonymous question endpoint; dedicated Q&A model method, prompt,
+and strict output validation; approved public snapshot and post-generation
+access/revision checks; 4 KB JSON limit; separate IP/token/global budgets;
+five-request concurrency cap; 30-second timeout with provider cancellation;
+visitor form, suggestions, source labels, memory-only transcript, explicit
+retry, and new-conversation control. Public GET responses now include
+`profileRevision` beside `profile` so the displayed profile and answers agree.
+
+Deterministic backend tests cover input limits, private-field exclusions,
+unknown/revoked links, mid-generation changes, provider failures, invalid
+output, source checks, budgets, capacity release, and cancellation. These
+tests do not prove factual grounding by a live model.
+Six Playwright browser tests passed with mocked API responses: anonymous use,
+suggestions, disabled pending controls, source labels, text rendering, explicit
+retry without duplicate entries, refresh/new-conversation clearing, revocation,
+and stale-profile replacement, plus partial/unavailable answer labels and input
+boundaries. These browser tests do not exercise the live database/provider.
+
+On 2026-11-17, `node scripts/evaluate-recruiter-qa.js` completed seven live
+DeepSeek cases using a synthetic profile. The initial run exposed unavailable
+answers containing supported facts without sources; the prompt was tightened.
+The final run returned the expected statuses and sources for supported React
+facts, missing Kubernetes details, partial React leadership, unsupported
+Python/Google premises, ambiguous references, private-data prompt injection,
+and hiring/ranking/sensitive-inference boundaries. Returned factual claims
+were reviewed against the synthetic profile. This is a small representative
+evaluation, not a guarantee that all generated answers are grounded.
+
+On the same date, `node scripts/verify-live-workflow.js --qa` passed against
+the configured Supabase and AI provider: authentication, upload/extraction,
+parsing, follow-up answers/skips, polishing, editing, stale-write rejection,
+atomic final saving/retry, concurrent sharing enables, anonymous Q&A with a
+matching saved revision, private-edit exclusion, subsequent final-save
+visibility, revocation, and token rotation. Temporary account, storage files,
+and cascading database records were cleaned up successfully.
+Deployment/proxy/logging checks remain as described in spec 05.

@@ -39,13 +39,37 @@ export async function manageSharing(accessToken: string, action?: 'enable' | 'di
   if (!response.ok) throw new Error(body.error || 'Unable to update sharing.')
   return body.sharing
 }
-export async function getSharedProfile(token: string, signal: AbortSignal): Promise<Omit<CandidateProfile, 'rawMetadata'>> {
+export type PublicProfile = Omit<CandidateProfile, 'rawMetadata'>
+export interface SharedProfileSnapshot { profile: PublicProfile; profileRevision: number }
+export class SharedProfileError extends Error {
+  status: number
+  constructor(message: string, status: number) { super(message); this.status = status }
+}
+export interface CandidateAnswer {
+  answer: string
+  status: 'answered' | 'partial' | 'unavailable'
+  sources: Array<Exclude<keyof PublicProfile, 'schemaVersion'>>
+  profileRevision: number
+}
+export async function askCandidateQuestion(token: string, question: string, signal: AbortSignal): Promise<CandidateAnswer> {
+  if (!apiUrl) throw new Error('The frontend API URL is not configured.')
+  const response = await fetch(`${apiUrl}/api/shared/profiles/${encodeURIComponent(token)}/questions`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question }),
+    signal, cache: 'no-store', referrerPolicy: 'no-referrer',
+  })
+  const body = await response.json()
+  if (!response.ok) throw new SharedProfileError(response.status === 429
+    ? `Too many questions. Retry after ${response.headers.get('Retry-After') || '60'} seconds.`
+    : body.error || 'Unable to answer. Please try again.', response.status)
+  return body
+}
+export async function getSharedProfile(token: string, signal: AbortSignal): Promise<SharedProfileSnapshot> {
   if (!apiUrl) throw new Error('The frontend API URL is not configured.')
   const response = await fetch(`${apiUrl}/api/shared/profiles/${encodeURIComponent(token)}`, { signal, cache: 'no-store', referrerPolicy: 'no-referrer' })
-  if (response.status === 404) throw new Error('Shared profile unavailable')
+  if (response.status === 404) throw new SharedProfileError('Shared profile unavailable', 404)
   if (response.status === 429) throw new Error(`Too many requests. Retry after ${response.headers.get('Retry-After') || '60'} seconds.`)
   if (!response.ok) throw new Error('Unable to load shared profile. Please try again.')
-  return (await response.json()).profile
+  return response.json()
 }
 
 export interface FollowupQuestion {

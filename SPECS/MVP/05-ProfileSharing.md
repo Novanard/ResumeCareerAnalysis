@@ -53,7 +53,9 @@ An existing candidate login does not grant editing controls in the visitor view.
 ## 4. Shared Content Contract
 
 Build a dedicated allowlisted public projection from the saved profile mapping
-in spec 02. The public response contains `{ profile: ... }` with:
+in spec 02. The public response contains `{ profile: ..., profileRevision: number }`.
+The revision is a public freshness marker for spec 06; it contains no private
+identifiers. The profile object contains:
 
 `schemaVersion`, `fullName`, `headline`, `summary`, `contact`, `skills`,
 `experience`, `education`, `projects`, `languages`, `certifications`, and
@@ -64,7 +66,7 @@ The public type omits `rawMetadata`; it is a projection rather than a change
 to the stored v1 contract. Allowlist nested keys as well as top-level keys.
 
 Never return database row objects directly. Exclude user/profile/resume/draft
-IDs, approval and revision metadata, storage paths, original files, extracted
+IDs, approval metadata, private draft revisions, storage paths, original files, extracted
 text, parsed baselines, questions, answers, proposals, and parsing warnings.
 No fallback to private resume text or drafts is allowed.
 

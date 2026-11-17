@@ -131,7 +131,7 @@ Re-enabling after revocation creates a new link; private draft edits stay privat
 Run `node scripts/verify-live-workflow.js --sharing` from `Backend` after setup
 to additionally check concurrent enables, anonymous reads, saved versus private
 content, revocation, and token rotation against the actual database. This mode
-has not yet been run against the new migration. The default live check remains
+has passed according to the user's report after applying the migration. The default live check remains
 available without the sharing migration.
 
 Set `SHARED_PROFILE_RATE_LIMIT` to the per-client requests/minute limit (default
@@ -143,3 +143,35 @@ Frontend hosting must rewrite `/shared/*` to `index.html`, send
 `Cache-Control: no-store` on those pages, and preserve the no-referrer and noindex
 directives. These hosting settings and browser interactions require deployment
 verification; this repository does not currently configure a hosting provider.
+
+## Recruiter Q&A
+
+Visitors to `/shared/:token` can ask questions without logging in. Answers use
+only the current approved shared profile, with supporting section labels.
+Private resumes, draft edits, and refinement answers are excluded. Questions
+are independent; the transcript stays in page memory and clears on refresh
+or **New conversation**. Suggestions fill the input without submitting it.
+
+`POST /api/shared/profiles/:token/questions` accepts only `{ "question": "..." }`
+(1–1,000 trimmed characters, 4 KB body limit). The existing DeepSeek settings
+are reused; no new database migration is needed beyond the sharing migrations.
+Without an AI key the profile remains readable and questions return 503.
+
+The defaults are 10 questions/IP/minute, 20/token/minute, 100 globally/minute,
+and five concurrent generations, configured with `QA_IP_RATE_LIMIT`,
+`QA_TOKEN_RATE_LIMIT`, `QA_GLOBAL_RATE_LIMIT`, and `QA_MAX_CONCURRENT`.
+Limits are per process. Generation times out after 30 seconds and aborts the
+provider request. Requests never retry automatically. Revocation discards
+in-flight answers; changed saved profiles require reloading and resubmission.
+
+Run `npm test` in Backend for deterministic Q&A checks. In Client, install the
+test browser with `npx playwright install chromium`, then run `npm run test:e2e`.
+Browser tests mock the public API; they do not use real candidate data or AI.
+From Backend, `node scripts/evaluate-recruiter-qa.js` makes seven paid AI calls
+using a synthetic profile and prints answers for factual review.
+`node scripts/verify-live-workflow.js --qa` also exercises the complete live
+candidate workflow, sharing, anonymous Q&A, private-edit separation, and
+revocation. It creates and cleans up a temporary synthetic account and uses
+paid AI requests, as described in the live workflow section above.
+Live-model factual grounding is separate from passing backend tests; see
+`SPECS/MVP/06-RecruiterQA.md` for the verification boundaries.

@@ -20,6 +20,16 @@ function publicProfile(row) {
   return profile;
 }
 function createProfileSharingService(supabase, environment = process.env) {
+  async function readSnapshot(token) {
+    if (!/^[A-Za-z0-9_-]{43}$/.test(token)) throw new ServiceError('Shared profile unavailable', 404);
+    const { data, error } = await supabase.from('candidate_profile_shares')
+      .select('candidate_profiles!inner(*)').eq('token', token).eq('enabled', true).maybeSingle();
+    checkSetup(error);
+    if (error) throw new ServiceError('Unable to load shared profile');
+    const row = data?.candidate_profiles;
+    if (!row?.approved_at) throw new ServiceError('Shared profile unavailable', 404);
+    return { profile: publicProfile(row), profileRevision: row.revision };
+  }
   function checkSetup(error) {
     if (['PGRST205', 'PGRST202', '42P01', '42883'].includes(error?.code)) {
       throw new ServiceError('Profile sharing is temporarily unavailable. Please try again later.', 503);
@@ -56,17 +66,8 @@ function createProfileSharingService(supabase, environment = process.env) {
       if (error) throw new ServiceError(error.code === 'P0001' ? 'Save your profile before enabling sharing' : 'Unable to update sharing', error.code === 'P0001' ? 409 : 500);
       return status(data?.[0]);
     },
-    async read(token) {
-      if (!/^[A-Za-z0-9_-]{43}$/.test(token)) throw new ServiceError('Shared profile unavailable', 404);
-      // One query joins active sharing and saved content for a consistent access check.
-      const { data, error } = await supabase.from('candidate_profile_shares')
-        .select('candidate_profiles!inner(*)').eq('token', token).eq('enabled', true).maybeSingle();
-      checkSetup(error);
-      if (error) throw new ServiceError('Unable to load shared profile');
-      const profile = data?.candidate_profiles;
-      if (!profile?.approved_at) throw new ServiceError('Shared profile unavailable', 404);
-      return publicProfile(profile);
-    },
+    readSnapshot,
+    async read(token) { return (await readSnapshot(token)).profile; },
   };
 }
 module.exports = { createProfileSharingService, publicProfile };

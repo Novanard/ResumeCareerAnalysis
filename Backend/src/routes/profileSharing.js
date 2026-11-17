@@ -1,7 +1,7 @@
 const { createProfileSharingService } = require('../services/profileSharingService');
 const { CandidateProfileServiceError } = require('../services/candidateProfileService');
 
-function registerProfileSharing(app, { supabase, authenticateUser, service, environment = process.env }) {
+function registerProfileSharing(app, { supabase, authenticateUser, service, modelClient, environment = process.env }) {
   const sharing = service || createProfileSharingService(supabase, environment);
   // Trust only explicitly configured proxy hops/addresses, never arbitrary forwarded headers.
   if (environment.TRUST_PROXY) app.set('trust proxy', environment.TRUST_PROXY.split(',').map(v => v.trim()));
@@ -27,7 +27,10 @@ function registerProfileSharing(app, { supabase, authenticateUser, service, envi
       try { res.json({ sharing: await sharing.set(req.user.id, enabled) }); } catch (error) { failure(res, error); }
     });
   }
-  app.use('/api/shared/profiles', privacy, (req, res, next) => {
+  app.use('/api/shared/profiles', privacy);
+  require('./candidateQuestions').registerCandidateQuestions(app, { sharing, modelClient, environment });
+  app.use('/api/shared/profiles', (req, res, next) => {
+    if (req.method !== 'GET') return next();
     const now = Date.now();
     for (const [key, value] of clients) if (value.until <= now) clients.delete(key);
     const key = req.ip;
@@ -38,7 +41,9 @@ function registerProfileSharing(app, { supabase, authenticateUser, service, envi
     next();
   });
   app.get(['/api/shared/profiles/:token', '/api/shared/profiles'], async (req, res) => {
-    try { res.json({ profile: await sharing.read(req.params.token || '') }); } catch (error) { failure(res, error); }
+    try {
+      res.json(sharing.readSnapshot ? await sharing.readSnapshot(req.params.token || '') : { profile: await sharing.read(req.params.token || '') });
+    } catch (error) { failure(res, error); }
   });
 }
 module.exports = { registerProfileSharing };

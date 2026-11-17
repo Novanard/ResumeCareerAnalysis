@@ -51,10 +51,10 @@ function createApp({
   const app = express();
 
   app.use(cors());
-  app.use(express.json());
   require('./routes/profileSharing').registerProfileSharing(app, {
-    supabase, authenticateUser, service: profileSharingService,
+    supabase, authenticateUser, service: profileSharingService, modelClient: aiClient,
   });
+  app.use(express.json());
 
   app.get("/api/health", (_req, res) => {
     res.json({ status: "ok" });

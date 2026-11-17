@@ -36,7 +36,8 @@ async function main() {
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY,
     { auth: { persistSession: false, autoRefreshToken: false } });
   const app = createApp({ supabaseClient: supabase });
-  const verifySharing = process.argv.includes('--sharing');
+  const verifyQa = process.argv.includes('--qa');
+  const verifySharing = process.argv.includes('--sharing') || verifyQa;
   if (verifySharing) {
     assert.ok(process.env.FRONTEND_ORIGIN, 'FRONTEND_ORIGIN must be configured for sharing verification');
     const preflight = await supabase.from('candidate_profile_shares').select('candidate_profile_id').limit(0);
@@ -109,6 +110,14 @@ async function main() {
       assert.equal(visitor.body.profile.headline, content.headline);
       assert.equal(visitor.body.profile.rawMetadata, undefined);
       assert.equal(visitor.headers['cache-control'], 'no-store');
+      if (verifyQa) {
+        const response = await request(app).post(`${publicPath}/questions`)
+          .send({ question: 'What technologies has this candidate used?' }).expect(200);
+        assert.equal(response.body.profileRevision, visitor.body.profileRevision);
+        assert.ok(response.body.sources.length > 0);
+        assert.ok(response.body.answer.includes('React'));
+        console.log('PASS anonymous Q&A uses approved saved profile and matching revision');
+      }
       console.log('PASS concurrent sharing enables, stable owner URL and anonymous saved-profile projection');
     }
     await action('reopen');
@@ -124,12 +133,20 @@ async function main() {
     if (verifySharing) {
       const unchanged = await request(app).get(publicPath).expect(200);
       assert.equal(unchanged.body.profile.headline, content.headline);
+      if (verifyQa) {
+        const response = await request(app).post(`${publicPath}/questions`)
+          .send({ question: 'What is the candidate headline?' }).expect(200);
+        assert.equal(response.body.profileRevision, unchanged.body.profileRevision);
+        assert.ok(!response.body.answer.includes('Private unsaved change'));
+        console.log('PASS Q&A excludes private unsaved edits');
+      }
       await action('save', { approved: true });
       const updated = await request(app).get(publicPath).expect(200);
       assert.equal(updated.body.profile.headline, 'Private unsaved change');
       await post('/api/profile/sharing/disable', {}).expect(200);
       await post('/api/profile/sharing/disable', {}).expect(200);
       await request(app).get(publicPath).expect(404);
+      if (verifyQa) await request(app).post(`${publicPath}/questions`).send({ question: 'Skills?' }).expect(404);
       const enabled = await post('/api/profile/sharing/enable', {}).expect(200);
       const newPath = `/api/shared/profiles/${new URL(enabled.body.sharing.url).pathname.split('/').pop()}`;
       assert.notEqual(newPath, publicPath);
