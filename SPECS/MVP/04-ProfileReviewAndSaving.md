@@ -7,6 +7,12 @@ specification covers private draft review through final saving, plus later
 manual editing. It follows [03](./03-ProfileRefinement.md) and uses the content
 contract in [02](./02-CandidateProfileContract.md).
 
+Optional analytics use the separate draft and explicit approval flow in
+[08](./08-AnalyticsDataContract.md). Saving this profile does not approve that
+document. Every new saved profile revision makes prior analytics stale until
+its references and content are reviewed and explicitly reapproved. A combined
+profile/analytics review UI is not implemented by the storage milestone.
+
 ## 2. Review and Confirmation
 
 - Display the complete proposed profile with changed or added content clearly

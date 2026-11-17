@@ -55,6 +55,7 @@ function createApp({
     supabase, authenticateUser, service: profileSharingService, modelClient: aiClient,
   });
   app.use(express.json());
+  require('./routes/profileAnalytics').registerProfileAnalytics(app, { supabase, authenticateUser });
 
   app.get("/api/health", (_req, res) => {
     res.json({ status: "ok" });

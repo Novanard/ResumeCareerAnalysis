@@ -9,6 +9,10 @@ output must use this contract.
 This document freezes schema version 1. Changes that break this shape require a
 new schema version.
 
+Optional richer analytics use a separate versioned document under
+[08 - Analytics Data Contract](./08-AnalyticsDataContract.md). Its fields are
+not added to this v1 shape, and its approval/storage is independent.
+
 The same content shape is used for parsed drafts, refined proposals, and saved
 profiles. Workflow state, revisions, questions, answers, and approval records
 are stored separately; they are not extra keys in this JSON contract.

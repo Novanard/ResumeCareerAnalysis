@@ -2,7 +2,7 @@
 
 ## 1. Purpose and Status
 
-Planned product requirements, not implemented functionality. The reference is
+Product requirements with an initial local implementation (see section 7). The reference is
 `Final Project/mockup/dashboard.html` and its `js/charts.js` and `js/data.js`.
 These files supply visual inspiration and a capability inventory; their sample
 data, embedded instructions, layout, scoring, and library choices are not
@@ -60,6 +60,11 @@ stable IDs and relationships; dated skill usage; project dates; outcomes and
 measurements; decisions; artifacts and evidence; collaboration; job rubrics and
 assessments; and company pipeline stages and membership.
 
+[08 - Analytics Data Contract](./08-AnalyticsDataContract.md) now defines and
+implements the separate candidate analytics storage/API foundation. Its migration
+is not yet applied. Company rubric/pipeline contracts and collection/public UI
+integration remain future work; the unavailable charts remain unimplemented.
+
 Candidate-provided additions follow review and explicit saving in specs 03/04.
 Company rubrics and pipeline records are separate company data, not candidate
 profile edits. Future company access must be specified before exposing those
@@ -111,3 +116,29 @@ Plotly adoption, and a pixel-identical layout are not prescribed.
   and unauthorized candidate/company data is excluded.
 - Keyboard, mobile, text equivalents, and independent chart failure states
   are verified. No company viewer-role selector is required for this work.
+
+## 7. Implementation and Verification Status
+
+Implemented locally on the shared profile page:
+- Employment timeline on a common calendar axis, year-only uncertainty
+  markings, and an expandable table of all employment facts. Missing or
+  reversed ranges are excluded from bars and remain readable in the table.
+- Project/technology sunburst with keyboard-operable project selection,
+  project descriptions, and a text equivalent of technology relationships.
+- Counts of saved projects, employment entries, and named skills, plus the
+  public saved-profile revision used for these views.
+- An expandable inventory of the eight remaining visualization types with
+  explicit unavailable states explaining their data prerequisites.
+
+Calculations use only the already-loaded public projection. No new API,
+profile fields, external chart services, company roles, or database migrations
+are introduced. Ongoing employment ends at the viewer's current calendar month.
+Summary completeness, outcomes, and fit indicators await their structured data
+and documented calculations; they are not presented as zero or sample scores.
+
+Verification: production frontend build and lint pass. All 12 Playwright tests
+pass, including three analytics tests covering uncertain/missing/reversed dates,
+keyboard drill-down, untrusted text, mobile overflow, capability descriptions,
+and empty profiles. Existing Q&A tests continue to cover profile revision
+refresh and removal of the shared content after a detected revocation.
+Live provider/database and deployed-browser checks were not run for this change.

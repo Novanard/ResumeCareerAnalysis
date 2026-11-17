@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import ProfileSections from '../components/candidate/ProfileSections'
 import { getSharedProfile, type SharedProfileSnapshot } from '../services/api'
 import RecruiterQuestions from '../components/candidate/RecruiterQuestions'
+import ProfileAnalytics from '../components/candidate/ProfileAnalytics'
 import '../styles/candidate-profile.css'
 
 export default function SharedProfilePage({ token }: { token: string }) {
@@ -35,6 +36,7 @@ export default function SharedProfilePage({ token }: { token: string }) {
             setSnapshot(updated)
             return updated.profileRevision
           }} />}
+        {snapshot && <ProfileAnalytics key={token} profile={profile} revision={snapshot.profileRevision} />}
         <ProfileSections profile={profile} />
       </>}
     </main>

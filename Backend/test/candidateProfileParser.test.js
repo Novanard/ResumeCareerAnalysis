@@ -14,7 +14,7 @@ test("parser sends resume text, instructions and the frozen schema to its model 
   const result = await parser.parse("Maya Cohen\nSoftware Engineer");
   assert.deepEqual(result, validCandidateProfile);
   assert.equal(request.input, "Maya Cohen\nSoftware Engineer");
-  assert.match(request.instructions, /Do not invent facts/);
+  assert.match(request.instructions, /do not evaluate, embellish,\s*recommend, or invent information/i);
   assert.equal(request.schema.properties.schemaVersion.const, 1);
 });
 

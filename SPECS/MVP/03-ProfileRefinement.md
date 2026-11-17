@@ -11,6 +11,10 @@ through candidate answers and AI wording suggestions. This stage follows
 Polishing improves profile content. Revised resume file generation, scoring,
 career recommendations, and job-specific tailoring are outside this MVP.
 
+The separate analytics contract in [08](./08-AnalyticsDataContract.md) does not
+change this stage's v1 output. Analytics extraction and follow-up collection
+are not yet implemented and require a specified extension of this flow first.
+
 ## 2. Candidate Flow
 
 1. Load the candidate's private parsed draft and show what was extracted.

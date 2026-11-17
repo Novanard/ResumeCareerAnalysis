@@ -110,6 +110,10 @@ Examples may include:
 - Initial charts can use existing saved facts. Richer analytics, rubric
   assessment, and company pipelines require later contracts and workflows;
   they do not change the frozen v1 profile or the current MVP completion gate.
+- Candidate analytics storage and owner-only draft/approval APIs are implemented
+  locally under [08](./08-AnalyticsDataContract.md), with an unapplied migration.
+  Analytics collection/review UI, public projection, and remaining charts are
+  still pending. New saved profile revisions require analytics reapproval.
 
 ## 5. Out of Scope for MVP
 The MVP will NOT include:
@@ -225,6 +229,7 @@ The MVP is considered functional when:
 | [05 - Profile Sharing](./05-ProfileSharing.md) | Opt-in/revocable links, read-only public projection, sharing API/UI, and access checks. |
 | [06 - Recruiter Q&A](./06-RecruiterQA.md) | Proposed anonymous questions, saved-profile grounding, transient transcripts, access checks, and generation limits. |
 | [07 - Dashboard Graphs and Analytics](./07-DashboardAnalytics.md) | Planned ten visualization types, summary indicators, data prerequisites, evidence drill-down, and staged delivery; company role-specific views deferred. |
+| [08 - Analytics Data Contract](./08-AnalyticsDataContract.md) | Separate versioned candidate analytics, private drafts and approval, owner APIs, revision safety, and unapplied storage migration; company data and collection UI deferred. |
 
 These documents describe target behavior, not a claim that every feature is
 implemented. The current baseline includes login, upload, parsing, and viewing
