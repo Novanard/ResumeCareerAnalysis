@@ -8,13 +8,14 @@ const original = {
   education: [], projects: [], languages: [], certifications: [], additionalSections: [],
 }
 const result = { answer: 'The profile lists React.', status: 'answered', sources: ['skills'], profileRevision: 1 }
-async function mock(page: Page, question: (route: Route) => Promise<void>, version = () => 1) {
+async function mock(page: Page, question: (route: Route) => Promise<void>, version = () => 1, open = true) {
   await page.route('**/api/shared/profiles/**', async route => {
     if (route.request().method() === 'POST') return question(route)
     await route.fulfill({ json: { profile: { ...original, headline: version() === 1 ? 'Developer' : 'Updated developer' }, profileRevision: version() } })
   })
   await page.goto(path)
   await expect(page.getByRole('heading', { name: 'Maya Cohen' })).toBeVisible()
+  if (open) await page.getByRole('button', { name: 'Ask about this candidate', exact: true }).click()
 }
 
 test('anonymous page, explicit suggestions, pending guard, sources, plain text and transcript clearing', async ({ page }) => {
@@ -43,6 +44,7 @@ test('anonymous page, explicit suggestions, pending guard, sources, plain text a
   await expect(input).toHaveValue('')
   await page.reload()
   await expect(page.locator('.question-transcript li')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Ask about this candidate', exact: true }).click()
   await input.fill('Skills?')
   await send.click()
   await expect(page.locator('.question-transcript li')).toHaveCount(1)
@@ -50,6 +52,73 @@ test('anonymous page, explicit suggestions, pending guard, sources, plain text a
   await expect(page.locator('.question-transcript li')).toHaveCount(0)
   expect(await page.evaluate(() => Object.keys(sessionStorage))).toEqual([])
   expect(await page.evaluate(() => Object.keys(localStorage).filter(key => /question|transcript/i.test(key)))).toEqual([])
+})
+
+test('desktop panel toggles without covering the profile and retains drafts and answers', async ({ page }) => {
+  let calls = 0
+  await mock(page, async route => { calls++; await route.fulfill({ json: result }) }, () => 1, false)
+  const launcher = page.getByRole('button', { name: 'Ask about this candidate', exact: true })
+  const panel = page.getByRole('dialog', { name: 'Ask about this candidate' })
+  await expect(panel).not.toBeVisible()
+  await launcher.click()
+  await expect(panel).toBeVisible()
+  const profileBounds = await page.locator('.profile-display-grid').boundingBox()
+  const panelBounds = await panel.boundingBox()
+  expect(profileBounds!.x + profileBounds!.width).toBeLessThanOrEqual(panelBounds!.x)
+  const input = page.getByRole('textbox')
+  await input.fill('Skills?')
+  await page.getByRole('button', { name: 'Close questions' }).click()
+  await expect(launcher).toBeFocused()
+  await expect(launcher).toHaveAttribute('aria-expanded', 'false')
+  await launcher.click()
+  await expect(input).toHaveValue('Skills?')
+  await page.getByRole('button', { name: 'Ask candidate profile', exact: true }).click()
+  await expect(page.locator('.question-transcript li')).toHaveCount(1)
+  await input.press('Escape')
+  await expect(panel).not.toBeVisible()
+  await launcher.click()
+  await expect(page.locator('.question-transcript li')).toHaveCount(1)
+  expect(calls).toBe(1)
+})
+
+test('mobile panel fills the viewport, traps focus, and survives resizing', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await mock(page, async route => { await route.fulfill({ json: result }) }, () => 1, false)
+  const launcher = page.getByRole('button', { name: 'Ask about this candidate', exact: true })
+  await launcher.click()
+  const panel = page.getByRole('dialog')
+  await expect(panel).toBeVisible()
+  expect(await panel.evaluate(element => element.matches(':modal'))).toBe(true)
+  const bounds = await panel.boundingBox()
+  expect(bounds!.width).toBe(390)
+  expect(bounds!.height).toBe(844)
+  await page.getByRole('button', { name: 'New conversation' }).focus()
+  await page.keyboard.press('Tab')
+  await expect(page.getByRole('button', { name: 'Close questions' })).toBeFocused()
+  await page.getByRole('textbox').fill('Draft question')
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await expect(panel).toBeVisible()
+  await expect.poll(() => panel.evaluate(element => element.matches(':modal'))).toBe(false)
+  await expect(page.getByRole('textbox')).toHaveValue('Draft question')
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expect.poll(() => panel.evaluate(element => element.matches(':modal'))).toBe(true)
+  await page.keyboard.press('Escape')
+  await expect(panel).not.toBeVisible()
+  await expect(launcher).toBeFocused()
+})
+
+test('closing the panel during generation preserves the single pending request', async ({ page }) => {
+  let finish: () => void = () => {}
+  const pending = new Promise<void>(resolve => { finish = resolve })
+  let calls = 0
+  await mock(page, async route => { calls++; await pending; await route.fulfill({ json: result }) })
+  await page.getByRole('textbox').fill('Skills?')
+  await page.getByRole('button', { name: 'Ask candidate profile', exact: true }).click()
+  await page.getByRole('button', { name: 'Close questions' }).click()
+  finish()
+  await page.getByRole('button', { name: 'Ask about this candidate', exact: true }).click()
+  await expect(page.getByText('Sources: Skills')).toBeVisible()
+  expect(calls).toBe(1)
 })
 
 test('retry keeps question, preserves readable profile, and creates no duplicate exchanges', async ({ page }) => {

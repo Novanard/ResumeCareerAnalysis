@@ -148,6 +148,10 @@ verification; this repository does not currently configure a hosting provider.
 
 Visitors to `/shared/:token` can ask questions without logging in. Answers use
 only the current approved shared profile, with supporting section labels.
+Select **Ask about this candidate** near the profile header to open the desktop
+side panel or mobile full-screen dialog. Closing it keeps your input and
+conversation until you refresh or leave the page. Answers appear once complete
+and validated, with a loading state while generation is pending.
 Private resumes, draft edits, and refinement answers are excluded. Questions
 are independent; the transcript stays in page memory and clears on refresh
 or **New conversation**. Suggestions fill the input without submitting it.
@@ -169,6 +173,9 @@ test browser with `npx playwright install chromium`, then run `npm run test:e2e`
 Browser tests mock the public API; they do not use real candidate data or AI.
 From Backend, `node scripts/evaluate-recruiter-qa.js` makes seven paid AI calls
 using a synthetic profile and prints answers for factual review.
+`node scripts/evaluate-recruiter-evidence.js` makes four additional synthetic
+AI requests checking concrete Java project examples, a skills-only Python
+entry, project versus professional experience, and missing Kafka information.
 `node scripts/verify-live-workflow.js --qa` also exercises the complete live
 candidate workflow, sharing, anonymous Q&A, private-edit separation, and
 revocation. It creates and cleans up a temporary synthetic account and uses

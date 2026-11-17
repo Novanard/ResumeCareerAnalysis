@@ -13,8 +13,11 @@ the public projection defined there, and never changes candidate content.
 ## 2. Visitor Flow
 
 1. Visitor opens a valid shared profile without creating an account.
-2. A section titled **Ask about this candidate** explains that answers use only
-   the saved shared profile and may be incomplete.
+2. A visible **Ask about this candidate** button near the profile header opens
+   a collapsible right-side panel on desktop. The profile remains readable
+   beside it. On mobile/tablet the panel fills the screen and contains keyboard
+   focus until closed. The panel explains that answers use only the saved
+   shared profile and may be incomplete.
 3. Visitor enters a question or selects a suggested question. Suggestions do not
    send requests until selected and submitted.
 4. The UI shows the submitted question and a pending response state.
@@ -24,6 +27,13 @@ the public projection defined there, and never changes candidate content.
    that the requested information is not available.
 7. Visitor may ask another question or select **New conversation** to clear the
    current transcript. Starting over does not affect candidate data.
+
+Closing the panel preserves the current input, transcript, and any pending
+request in page memory. Reopening displays the same conversation without a new
+AI request. Close and Escape return focus to the launcher. Refreshing or
+leaving the page still clears the conversation. Answers appear after full
+validation and the final access check; streaming and simulated typing are not
+part of this interface change.
 
 Suggested questions can include “What technologies has this candidate used?”
 and “What work experience is listed?” Avoid suggestions that imply unknown facts.
@@ -49,6 +59,16 @@ No requests or AI charges occur merely from viewing the page or typing.
   expand the source boundary.
 - Keep responses concise and professional; use the question's language where
   supported. Do not claim the candidate has personally verified an AI answer.
+- Make answers useful without requiring the visitor to reopen the CV. For
+  experience questions, name the strongest relevant projects or roles and
+  explain the documented tasks, technologies, and outcomes. Section labels
+  supplement these concrete examples; a generic claim that several projects
+  exist is insufficient when descriptions are available.
+- Distinguish a listed skill from demonstrated practical use, and project
+  experience from documented employment experience. A skill alone does not
+  establish hands-on use. Do not infer technical responsibilities merely from
+  a project's technology list. Use short paragraphs or plain-text bullets;
+  detail should scale with the available evidence rather than pad sparse data.
 
 Example: if React is listed but leadership is not, answer a question about React
 leadership by describing the listed React work and stating that leadership
@@ -244,3 +264,30 @@ matching saved revision, private-edit exclusion, subsequent final-save
 visibility, revocation, and token rotation. Temporary account, storage files,
 and cascading database records were cleaned up successfully.
 Deployment/proxy/logging checks remain as described in spec 05.
+
+### Answer usefulness refinement
+
+The initial Q&A could say that several projects used a technology without
+explaining them. The prompt now asks for concrete project/role names and the
+documented tasks, technologies, and outcomes, distinguishing a skill entry
+from practical use and an unlabeled project from professional employment.
+
+On 2026-11-17, all 79 deterministic backend tests and the seven existing live
+synthetic Q&A cases passed after this change. Four additional live evidence
+cases produced named Java project examples with JDBC and threading details,
+partial answers for skills-only Python and undocumented professional Java
+experience, and an unavailable answer for missing Kafka experience. The Java
+examples were checked against the supplied synthetic descriptions. An initial
+run guessed academic/personal project context; the prompt was tightened and
+the subsequent run preserved unspecified context. Some unavailable replies
+can still add unnecessary related facts; further evaluation remains useful.
+Run `node scripts/evaluate-recruiter-evidence.js` to repeat these quality checks.
+
+### Collapsible question panel
+
+Nine Playwright browser tests pass after moving Q&A from the profile footer to
+a desktop side panel and mobile full-screen dialog. Added checks cover toggle
+and Escape controls, returning focus, preserving unsent questions and answers,
+keeping desktop profile content clear of the panel, mobile dimensions and
+focus containment, responsive resizing, and finishing a pending request while
+closed. Existing retry, privacy, revocation, and profile revision checks pass.

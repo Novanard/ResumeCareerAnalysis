@@ -17,7 +17,7 @@ export default function SharedProfilePage({ token }: { token: string }) {
     })
     return () => controller.abort()
   }, [token, attempt])
-  return <div className="app-shell">
+  return <div className="app-shell shared-shell">
     <header className="site-header"><span className="brand">Career Profile</span></header>
     <main className="profile-page">
       {!profile ? <section role={error ? 'alert' : 'status'}>
@@ -28,7 +28,6 @@ export default function SharedProfilePage({ token }: { token: string }) {
         <h1>{profile.fullName || 'Candidate'}</h1>
         {profile.headline && <p className="headline">{profile.headline}</p>}
         {profile.summary && <p className="summary">{profile.summary}</p>}
-        <ProfileSections profile={profile} />
         {snapshot && <RecruiterQuestions token={token} profileRevision={snapshot.profileRevision}
           onUnavailable={() => { setSnapshot(null); setError('Shared profile unavailable') }}
           onRefresh={async () => {
@@ -36,6 +35,7 @@ export default function SharedProfilePage({ token }: { token: string }) {
             setSnapshot(updated)
             return updated.profileRevision
           }} />}
+        <ProfileSections profile={profile} />
       </>}
     </main>
   </div>
